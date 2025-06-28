@@ -3,6 +3,3 @@ node_modules/
 vite.config.ts
 docker-compose.yml
 Dockerfile
-package-lock.json
-package.json
-docker-compose.yml
