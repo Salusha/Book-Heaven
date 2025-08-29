@@ -160,7 +160,7 @@ const About = () => {
           </div>
           <div className="relative">
             <img
-              src="/placeholder.svg"
+              src="aboutus.jpg"
               alt="Book Heaven team"
               className="w-full h-96 object-cover rounded-lg shadow-lg"
             />
