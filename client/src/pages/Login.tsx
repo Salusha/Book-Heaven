@@ -178,6 +178,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import axios from "axios";
 import { toast } from "@/components/ui/use-toast";
+import { useWishlist } from "@/contexts/WishlistContext";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -185,6 +186,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { refreshWishlist } = useWishlist();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -209,6 +211,9 @@ const Login = () => {
       } else {
         sessionStorage.setItem("token", token);
       }
+
+      // Refresh wishlist for this user
+      await refreshWishlist();
 
       // ✅ No redirect — stay on login page
     } catch (error: any) {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,10 +22,36 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { categories } from "@/lib/books-data";
+import axios from "axios";
 
 const Navbar = () => {
   const [cartItems] = useState<number>(3); // Mock cart items
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
+
+  const slugifyCategory = (name: string) =>
+    name
+      .toLowerCase()
+      .replace(/&/g, "-&-") // keep ampersand slug style consistent
+      .replace(/\s+/g, "-");
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const res = await axios.get("/api/products");
+        const counts: Record<string, number> = {};
+        (res.data.products || []).forEach((p: any) => {
+          const cat = p?.category || "";
+          const slug = slugifyCategory(cat);
+          counts[slug] = (counts[slug] || 0) + 1;
+        });
+        setCategoryCounts(counts);
+      } catch (err) {
+        console.error("Failed to fetch category counts", err);
+      }
+    };
+    fetchCounts();
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -41,21 +67,25 @@ const Navbar = () => {
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList>
               <NavigationMenuItem>
-                <Link to="/browse">
-                  <NavigationMenuLink className="group inline-flex h-10 items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
-                    Browse Books
-                  </NavigationMenuLink>
-                </Link>
+                <NavigationMenuLink
+                  asChild
+                  className="group inline-flex h-10 items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <Link to="/browse">Browse Books</Link>
+                </NavigationMenuLink>
               </NavigationMenuItem>
 
               <NavigationMenuItem>
                 <NavigationMenuTrigger>Categories</NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <div className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-                    {categories.map((category) => (
+                    {categories.map((category) => {
+                      const slug = slugifyCategory(category.name);
+                      const count = categoryCounts[slug] ?? category.bookCount;
+                      return (
                       <Link
                         key={category.id}
-                        to={`/categories/${category.name.toLowerCase().replace(/\s+/g, "-")}`}
+                        to={`/categories/${slug}`}
                         className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
                       >
                         <div className="text-sm font-medium leading-none">
@@ -65,28 +95,31 @@ const Navbar = () => {
                           {category.description}
                         </p>
                         <Badge variant="secondary" className="text-xs">
-                          {category.bookCount} books
+                          {count} {count === 1 ? "book" : "books"}
                         </Badge>
                       </Link>
-                    ))}
+                      );
+                    })}
                   </div>
                 </NavigationMenuContent>
               </NavigationMenuItem>
 
               <NavigationMenuItem>
-                <Link to="/about">
-                  <NavigationMenuLink className="group inline-flex h-10 items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
-                    About
-                  </NavigationMenuLink>
-                </Link>
+                <NavigationMenuLink
+                  asChild
+                  className="group inline-flex h-10 items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <Link to="/about">About</Link>
+                </NavigationMenuLink>
               </NavigationMenuItem>
 
               <NavigationMenuItem>
-                <Link to="/contact">
-                  <NavigationMenuLink className="group inline-flex h-10 items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
-                    Contact
-                  </NavigationMenuLink>
-                </Link>
+                <NavigationMenuLink
+                  asChild
+                  className="group inline-flex h-10 items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <Link to="/contact">Contact</Link>
+                </NavigationMenuLink>
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
@@ -147,16 +180,19 @@ const Navbar = () => {
 
                   <div className="space-y-2">
                     <h3 className="text-lg font-medium">Categories</h3>
-                    {categories.map((category) => (
-                      <Link
-                        key={category.id}
-                        to={`/categories/${category.name.toLowerCase().replace(/\s+/g, "-")}`}
-                        className="block pl-4 py-1 text-sm text-muted-foreground hover:text-foreground"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        {category.name}
-                      </Link>
-                    ))}
+                    {categories.map((category) => {
+                      const slug = slugifyCategory(category.name);
+                      return (
+                        <Link
+                          key={category.id}
+                          to={`/categories/${slug}`}
+                          className="block pl-4 py-1 text-sm text-muted-foreground hover:text-foreground"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          {category.name}
+                        </Link>
+                      );
+                    })}
                   </div>
 
                   {/* Authors link removed */}
