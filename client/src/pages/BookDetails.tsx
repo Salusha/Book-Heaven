@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,18 +21,57 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import BookCard from "@/components/BookCard";
-import { getBookById, books } from "@/lib/books-data";
 import { cn } from "@/lib/utils";
 
 const BookDetails = () => {
   const { id } = useParams<{ id: string }>();
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const book = getBookById(id || "");
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
 
-  if (!book) {
+  useEffect(() => {
+    const loadProduct = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await axios.get(`${apiBaseUrl}/api/product/${id}`);
+        setProduct(response.data?.response?.data?.product);
+      } catch (err) {
+        console.error("Failed to load product", err);
+        setError("Product not found");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      loadProduct();
+    }
+  }, [id, apiBaseUrl]);
+
+  useEffect(() => {
+    if (!product) return;
+    const stock = Math.max(0, Number(product.Stock) || 0);
+    setQuantity(stock > 0 ? 1 : 0);
+  }, [product]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 py-16 text-center">
+          <p className="text-muted-foreground">Loading product details...</p>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error || !product) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -52,17 +92,28 @@ const BookDetails = () => {
     );
   }
 
-  const relatedBooks = books
-    .filter(
-      (b) =>
-        b._id !== book._id &&
-        (b.category === book.category || b.author === book.author),
-    )
-    .slice(0, 4);
+  const book = {
+    _id: product._id,
+    title: product.name,
+    author: product.author,
+    description: product.description,
+    price: product.price,
+    rating: product.ratings || 0,
+    reviewCount: product.numOfReviews || 0,
+    category: product.category,
+    publisher: product.publisher || "Book Haven",
+    publishedDate: product.publishedDate || product.createdAt,
+    pages: product.pages || 0,
+    language: product.language || "English",
+    coverImage: product.images?.[0]?.url || "/placeholder.svg",
+    inStock: product.Stock > 0,
+    stock: Math.max(0, Number(product.Stock) || 0),
+    bestseller: Boolean(product.bestseller),
+    newRelease: Boolean(product.newRelease),
+    featured: Boolean(product.featured),
+  };
 
-  const discountPercentage = book.originalPrice
-    ? Math.round(((book.originalPrice - book.price) / book.originalPrice) * 100)
-    : 0;
+  const discountPercentage = 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -107,12 +158,23 @@ const BookDetails = () => {
             </div>
 
             <div className="flex items-center space-x-2">
-              <div className="flex">
+              <div className="flex relative">
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <Star key={star} className={cn("h-5 w-5", star <= Math.floor(book.rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300")} />
+                  <div key={star} className="relative">
+                    <Star className="h-5 w-5 text-gray-300" />
+                    <div
+                      className="absolute top-0 left-0 overflow-hidden"
+                      style={{
+                        width: `${Math.max(0, Math.min(1, book.rating - star + 1)) * 100}%`,
+                      }}
+                    >
+                      <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                    </div>
+                  </div>
                 ))}
               </div>
-              <span className="text-lg font-medium">{book.rating}</span>
+              <span className="text-lg font-medium">{book.rating.toFixed(1)}</span>
+              <span className="text-sm text-muted-foreground">({book.reviewCount} reviews)</span>
             </div>
 
             <div className="space-y-2">
@@ -143,14 +205,29 @@ const BookDetails = () => {
                   <div className="flex items-center space-x-3">
                     <span className="font-medium">Quantity:</span>
                     <div className="flex items-center border rounded-md">
-                      <Button variant="ghost" size="sm" onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1}><Minus className="h-4 w-4" /></Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        disabled={quantity <= 1 || !book.inStock}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
                       <span className="px-4 py-2 min-w-[3rem] text-center">{quantity}</span>
-                      <Button variant="ghost" size="sm" onClick={() => setQuantity(quantity + 1)} disabled={quantity >= 10}><Plus className="h-4 w-4" /></Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setQuantity(Math.min(book.stock, quantity + 1))}
+                        disabled={!book.inStock || quantity >= book.stock}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
                     </div>
+                    <p className="text-sm text-muted-foreground">Available: {book.stock}</p>
                   </div>
 
                   <div className="flex gap-2">
-                    <Button className="flex-1" disabled={!book.inStock} size="lg">
+                    <Button className="flex-1" disabled={!book.inStock || quantity < 1} size="lg">
                       <ShoppingCart className="h-4 w-4 mr-2" />
                       {book.inStock ? "Add to Cart" : "Out of Stock"}
                     </Button>
@@ -228,9 +305,7 @@ const BookDetails = () => {
             <div className="space-y-6">
               <h3 className="text-2xl font-bold">You Might Also Like</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {relatedBooks.map((relatedBook) => (
-                  <BookCard key={relatedBook._id} book={relatedBook} />
-                ))}
+                <p className="text-muted-foreground">Related products coming soon</p>
               </div>
             </div>
           </TabsContent>

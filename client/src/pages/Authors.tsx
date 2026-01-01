@@ -227,17 +227,11 @@ const Authors = () => {
             </div>
             <div>
               <div className="text-3xl font-bold text-primary mb-2">
-                {
-                  new Set(
-                    authors
-                      .map((author) =>
-                        getBooksByAuthor(author.name).map(
-                          (book) => book.category,
-                        ),
-                      )
-                      .flat(),
-                  ).size
-                }
+                {new Set<string>(
+                  authors.flatMap((author) =>
+                    getBooksByAuthor(author.name).map((book) => book.category),
+                  ),
+                ).size}
                 +
               </div>
               <div className="text-muted-foreground">Genres Covered</div>

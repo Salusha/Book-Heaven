@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import axios from "axios";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,13 +21,74 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BookCard from "@/components/BookCard";
 import {
-  featuredBooks,
-  bestsellers,
-  newReleases,
+  featuredBooks as fallbackFeatured,
+  bestsellers as fallbackBestsellers,
+  newReleases as fallbackNewReleases,
   categories,
 } from "@/lib/books-data";
+import { Book } from "@/lib/types";
 
 const Index = () => {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
+  const [productsData, setProductsData] = useState<Book[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoadError(null);
+        const response = await axios.get(`${apiBaseUrl}/api/products`);
+        const products =
+          response.data?.products ?? response.data?.response?.data?.products ?? [];
+
+        const mappedProducts: Book[] = products.map((product: any): Book => ({
+          _id: product._id,
+          title: product.name || "Untitled",
+          author: product.author || "Unknown author",
+          description: product.description || "No description available.",
+          price: Number(product.price) || 0,
+          originalPrice: product.originalPrice ? Number(product.originalPrice) : undefined,
+          rating: typeof product.ratings === "number" ? product.ratings : 0,
+          reviewCount: product.numOfReviews ?? 0,
+          category: product.category || "General",
+          isbn: product.isbn || product._id || "N/A",
+          publisher: product.publisher || "Book Haven",
+          publishedDate:
+            product.publishedDate || product.createdAt || new Date().toISOString(),
+          pages: product.pages || 0,
+          language: product.language || "English",
+          coverImage: product.images?.[0]?.url || "/placeholder.svg",
+          inStock: product.Stock ? product.Stock > 0 : true,
+          featured: Boolean(product.featured),
+          bestseller: Boolean(product.bestseller),
+          newRelease: Boolean(product.newRelease),
+        }));
+
+        setProductsData(mappedProducts);
+      } catch (err) {
+        console.error("Failed to load featured products", err);
+        setLoadError("Unable to load books from the server.");
+      }
+    };
+
+    fetchProducts();
+  }, [apiBaseUrl]);
+
+  const featuredToShow = (() => {
+    const list = productsData.filter((book) => book.featured);
+    return list.length ? list : fallbackFeatured;
+  })();
+
+  const bestsellersToShow = (() => {
+    const list = productsData.filter((book) => book.bestseller);
+    return list.length ? list : fallbackBestsellers;
+  })();
+
+  const newReleasesToShow = (() => {
+    const list = productsData.filter((book) => book.newRelease);
+    return list.length ? list : fallbackNewReleases;
+  })();
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -141,10 +204,13 @@ const Index = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {featuredBooks.map((book) => (
-              <BookCard key={book.id} book={book} />
+            {featuredToShow.map((book) => (
+              <BookCard key={book._id} book={book} />
             ))}
           </div>
+          {loadError && (
+            <p className="text-sm text-destructive mt-4">{loadError}</p>
+          )}
         </div>
       </section>
 
@@ -208,8 +274,8 @@ const Index = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {bestsellers.map((book) => (
-              <BookCard key={book.id} book={book} />
+            {bestsellersToShow.map((book) => (
+              <BookCard key={book._id} book={book} />
             ))}
           </div>
         </div>
@@ -234,8 +300,8 @@ const Index = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {newReleases.map((book) => (
-              <BookCard key={book.id} book={book} />
+            {newReleasesToShow.map((book) => (
+              <BookCard key={book._id} book={book} />
             ))}
           </div>
         </div>
