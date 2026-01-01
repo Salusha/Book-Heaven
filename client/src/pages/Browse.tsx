@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,7 +10,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -25,21 +25,73 @@ import {
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BookCard from "@/components/BookCard";
-import { books, categories } from "@/lib/books-data";
+import { categories } from "@/lib/books-data";
 import { Book } from "@/lib/types";
 
 const Browse = () => {
+  const [booksData, setBooksData] = useState<Book[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("relevance");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState([0, 50]);
   const [showInStockOnly, setShowInStockOnly] = useState(false);
   const [showBestsellers, setShowBestsellers] = useState(false);
   const [showNewReleases, setShowNewReleases] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const normalizeCategory = (value: string) => value.toLowerCase().replace(/[\s&-]+/g, "");
+
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || ""; // empty  relative to current origin
+
+  const mapProductToBook = (product: any): Book => ({
+    _id: product._id,
+    title: product.name || "Untitled",
+    author: product.author || "Unknown author",
+    description: product.description || "No description available.",
+    price: Number(product.price) || 0,
+    originalPrice: product.originalPrice ? Number(product.originalPrice) : undefined,
+    rating: typeof product.ratings === "number" ? product.ratings : 0,
+    reviewCount: product.numOfReviews ?? 0,
+    category: product.category || "General",
+    isbn: product.isbn || product._id || "N/A",
+    publisher: product.publisher || "Book Haven",
+    publishedDate: product.publishedDate || product.createdAt || new Date().toISOString(),
+    pages: product.pages || 0,
+    language: product.language || "English",
+    coverImage: product.images?.[0]?.url || "/placeholder.svg",
+    inStock: product.Stock ? product.Stock > 0 : true,
+    featured: Boolean(product.featured),
+    bestseller: Boolean(product.bestseller),
+    newRelease: Boolean(product.newRelease),
+  });
+
+  const loadBooks = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await axios.get(`${apiBaseUrl}/api/products`);
+      const products = response.data?.products ?? [];
+      console.log("Loaded products:", products.length);
+      if (products.length > 0) {
+        console.log("First product:", products[0]);
+        console.log("Ratings value:", products[0].ratings);
+      }
+      setBooksData(products.map(mapProductToBook));
+    } catch (err) {
+      console.error("Failed to load products", err);
+      setError("Unable to load books from the server. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [apiBaseUrl]);
+
+  useEffect(() => {
+    loadBooks();
+  }, [loadBooks]);
 
   const filteredBooks = useMemo(() => {
-    let filtered = books.filter((book) => {
+    let filtered = booksData.filter((book) => {
       const matchesSearch =
         searchQuery === "" ||
         book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -48,7 +100,9 @@ const Browse = () => {
 
       const matchesCategory =
         selectedCategories.length === 0 ||
-        selectedCategories.includes(book.category);
+        selectedCategories.some(
+          (selected) => normalizeCategory(selected) === normalizeCategory(book.category),
+        );
 
       const matchesStock = !showInStockOnly || book.inStock;
       const matchesBestseller = !showBestsellers || book.bestseller;
@@ -77,7 +131,7 @@ const Browse = () => {
         filtered.sort(
           (a, b) =>
             new Date(b.publishedDate).getTime() -
-            new Date(a.publishedDate).getTime()
+            new Date(a.publishedDate).getTime(),
         );
         break;
       case "title":
@@ -89,10 +143,10 @@ const Browse = () => {
 
     return filtered;
   }, [
+    booksData,
     searchQuery,
     sortBy,
     selectedCategories,
-    priceRange,
     showInStockOnly,
     showBestsellers,
     showNewReleases,
@@ -109,7 +163,6 @@ const Browse = () => {
   const clearFilters = () => {
     setSearchQuery("");
     setSelectedCategories([]);
-    setPriceRange([0, 50]);
     setShowInStockOnly(false);
     setShowBestsellers(false);
     setShowNewReleases(false);
@@ -133,7 +186,7 @@ const Browse = () => {
                 htmlFor={category.id}
                 className="text-sm font-medium leading-none cursor-pointer"
               >
-                {category.name} ({category.bookCount})
+                {category.name}
               </label>
             </div>
           ))}
@@ -141,26 +194,6 @@ const Browse = () => {
       </div>
 
       <Separator />
-
-      {/* <div>
-        <h3 className="font-semibold mb-3">Price Range</h3>
-        <div className="space-y-4">
-          <Slider
-            value={priceRange}
-            onValueChange={setPriceRange}
-            max={50}
-            min={0}
-            step={1}
-            className="w-full"
-          />
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>${priceRange[0]}</span>
-            <span>${priceRange[1]}</span>
-          </div>
-        </div>
-      </div> */}
-
-      {/* <Separator /> */}
 
       <div>
         <h3 className="font-semibold mb-3">Additional Filters</h3>
@@ -307,6 +340,15 @@ const Browse = () => {
           </div>
 
           <div className="flex-1">
+            {error && (
+              <div className="mb-4 flex items-center justify-between rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                <span>{error}</span>
+                <Button size="sm" variant="outline" onClick={loadBooks}>
+                  Retry
+                </Button>
+              </div>
+            )}
+
             {(selectedCategories.length > 0 ||
               showInStockOnly ||
               showBestsellers ||
@@ -320,7 +362,7 @@ const Browse = () => {
                       className="cursor-pointer"
                       onClick={() => handleCategoryChange(category, false)}
                     >
-                      {category} ×
+                      {category} 
                     </Badge>
                   ))}
                   {showInStockOnly && (
@@ -329,7 +371,7 @@ const Browse = () => {
                       className="cursor-pointer"
                       onClick={() => setShowInStockOnly(false)}
                     >
-                      In Stock ×
+                      In Stock 
                     </Badge>
                   )}
                   {showBestsellers && (
@@ -338,7 +380,7 @@ const Browse = () => {
                       className="cursor-pointer"
                       onClick={() => setShowBestsellers(false)}
                     >
-                      Bestsellers ×
+                      Bestsellers 
                     </Badge>
                   )}
                   {showNewReleases && (
@@ -347,7 +389,7 @@ const Browse = () => {
                       className="cursor-pointer"
                       onClick={() => setShowNewReleases(false)}
                     >
-                      New Releases ×
+                      New Releases 
                     </Badge>
                   )}
                 </div>
@@ -356,16 +398,24 @@ const Browse = () => {
 
             <div className="flex items-center justify-between mb-6">
               <p className="text-muted-foreground">
-                Showing {filteredBooks.length} of {books.length} books
+                {loading
+                  ? "Loading books..."
+                  : `Showing ${filteredBooks.length} of ${booksData.length} books`}
               </p>
             </div>
 
             {filteredBooks.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-muted-foreground mb-4">
-                  No books found matching your criteria.
-                </p>
-                <Button onClick={clearFilters}>Clear Filters</Button>
+                {loading ? (
+                  <p className="text-muted-foreground">Loading books...</p>
+                ) : (
+                  <>
+                    <p className="text-muted-foreground mb-4">
+                      No books found matching your criteria.
+                    </p>
+                    <Button onClick={clearFilters}>Clear Filters</Button>
+                  </>
+                )}
               </div>
             ) : (
               <div
@@ -377,10 +427,10 @@ const Browse = () => {
               >
                 {filteredBooks.map((book) => (
                   <BookCard
-                    key={book._id} // ✅ Updated here
+                    key={book._id}
                     book={book}
                     showFullDescription={viewMode === "list"}
-                    className={viewMode === "list" ? "flex flex-row" : ""}
+                    layout={viewMode === "list" ? "list" : "grid"}
                   />
                 ))}
               </div>
