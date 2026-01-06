@@ -216,14 +216,27 @@ const SavedAddresses = () => {
   /* Delete address */
   const handleDeleteAddress = async (id: string) => {
     try {
-      await axios.delete(`${apiBaseUrl}/api/address/${id}`, {
+      const response = await axios.delete(`${apiBaseUrl}/api/address/${id}`, {
         headers: { "auth-token": token },
       });
+      console.log("Delete success:", response.data);
       toast({ title: "Address deleted successfully!" });
       fetchAddresses();
-    } catch {
+    } catch (error: any) {
+      console.error("Delete failed - Error details:");
+      console.error("Status:", error.response?.status);
+      console.error("Data:", error.response?.data);
+      console.error("Message:", error.message);
+      console.error("Full error:", error);
+      
+      const errorMsg = error.response?.data?.errors?.message || 
+                       error.response?.data?.message || 
+                       error.message || 
+                       "Unknown error";
+      
       toast({
         title: "Failed to delete address",
+        description: errorMsg,
         variant: "destructive",
       });
     }

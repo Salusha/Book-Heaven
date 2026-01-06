@@ -131,7 +131,7 @@ exports.deleteAddress = catchAsyncErrors(async (req, res) => {
   }
 
   const wasDefault = addr.isDefault;
-  addr.remove();
+  doc.addresses.pull(addressId);
 
   // If default was deleted → make first address default
   if (wasDefault && doc.addresses.length > 0) {
