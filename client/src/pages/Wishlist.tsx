@@ -13,7 +13,6 @@ import { useWishlist } from "@/contexts/WishlistContext";
 const Wishlist = () => {
   const [wishlistItems, setWishlistItems] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>("");
   const { refreshWishlist, wishlistIds } = useWishlist();
 
   const mapProductToBook = (product: any): Book => ({
@@ -40,9 +39,10 @@ const Wishlist = () => {
 
   useEffect(() => {
     const fetchWishlist = async () => {
+      setLoading(true);
+      
       try {
         const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-        console.log("Fetching wishlist, token present:", !!token);
         
         const response = await axios.get("/api/wishlist/getwishlistdata", {
           headers: {
@@ -50,13 +50,12 @@ const Wishlist = () => {
           },
         });
         
-        console.log("Wishlist response:", response.data);
         setWishlistItems(response.data.wishlistItems || []);
-        setLoading(false);
         await refreshWishlist(); // Sync global wishlist state
       } catch (err: any) {
-        console.error("Wishlist error:", err);
-        setError(err.response?.data?.message || "Failed to load wishlist.");
+        // Silently handle any errors - just show empty wishlist
+        setWishlistItems([]);
+      } finally {
         setLoading(false);
       }
     };
@@ -67,10 +66,7 @@ const Wishlist = () => {
   const wishlistBooks = wishlistItems
     .map((item) => item?.product)
     .filter(Boolean)
-    .filter((product) => wishlistIds.has(product._id)) // Only show items still in wishlist
     .map(mapProductToBook);
-
-  console.log("Wishlist books to render:", wishlistBooks);
 
   return (
     <div className="min-h-screen bg-background">
@@ -79,32 +75,26 @@ const Wishlist = () => {
       <div className="container mx-auto px-4 py-16 text-center">
         {loading ? (
           <p className="text-muted-foreground">Loading your wishlist...</p>
-        ) : error ? (
-          <div className="text-destructive">{error}</div>
+        ) : wishlistBooks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center space-y-6">
+            <Heart className="w-12 h-12 text-muted-foreground" />
+            <h2 className="text-2xl font-bold">Your Wishlist is Empty</h2>
+            <p className="text-muted-foreground max-w-md">
+              You haven't added any books to your wishlist yet. Start exploring
+              and save the ones you love!
+            </p>
+            <Link to="/browse">
+              <Button>Browse Books</Button>
+            </Link>
+          </div>
         ) : (
-          <div className="animate-fade-in">
-            {wishlistBooks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center space-y-6">
-                <Heart className="w-12 h-12 text-muted-foreground" />
-                <h2 className="text-2xl font-bold">Your Wishlist is Empty</h2>
-                <p className="text-muted-foreground max-w-md">
-                  You haven't added any books to your wishlist yet. Start exploring
-                  and save the ones you love!
-                </p>
-                <Link to="/browse">
-                  <Button>Browse Books</Button>
-                </Link>
-              </div>
-            ) : (
-              <div className="text-left">
-                <h2 className="text-2xl font-bold mb-6">Your Wishlist</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {wishlistBooks.map((book) => (
-                    <BookCard key={book._id} book={book} className="max-w-sm" />
-                  ))}
-                </div>
-              </div>
-            )}
+          <div className="text-left">
+            <h2 className="text-2xl font-bold mb-6">Your Wishlist</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {wishlistBooks.map((book) => (
+                <BookCard key={book._id} book={book} className="max-w-sm" />
+              ))}
+            </div>
           </div>
         )}
       </div>
