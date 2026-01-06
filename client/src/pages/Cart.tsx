@@ -10,6 +10,7 @@ import { toast } from "@/components/ui/use-toast";
 import BookCard from "@/components/BookCard";
 import { Book } from "@/lib/types";
 import { useCart } from "@/contexts/CartContext";
+import { useNavigate } from "react-router-dom";
 
 interface CartItem {
   _id: string;
@@ -23,7 +24,8 @@ const Cart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState<string | null>(null);
-  const { isInCart } = useCart();
+  const navigate = useNavigate();
+  const { isInCart, removeFromCart, updateQuantity, refreshCart } = useCart();
 
   const mapProductToBook = (product: any): Book => ({
     _id: product._id,
@@ -42,6 +44,7 @@ const Cart = () => {
     language: product.language || "English",
     coverImage: product.images?.[0]?.url || "/placeholder.svg",
     inStock: product.Stock ? product.Stock > 0 : true,
+    stockQuantity: product.Stock || 0,
     featured: Boolean(product.featured),
     bestseller: Boolean(product.bestseller),
     newRelease: Boolean(product.newRelease),
@@ -61,10 +64,10 @@ const Cart = () => {
       
       setCartItems((prev) => prev.filter((item) => item.productId !== productId));
       removeFromCart(productId);
-      toast({ title: "Removed from cart", description: "Item removed successfully." });
+      toast({ title: "Removed from cart" });
     } catch (err: any) {
       console.error("Failed to remove item:", err);
-      toast({ title: "Error", description: "Failed to remove item from cart.", variant: "destructive" });
+      toast({ title: "Error", variant: "destructive" });
     } finally {
       setRemoving(null);
     }
@@ -137,8 +140,21 @@ const Cart = () => {
         })
         .filter(Boolean) as CartItem[]; // remove nulls
 
-      console.log("Transformed cart items:", transformed);
-      setCartItems(transformed);
+      // Group items by productId and aggregate quantities
+      const groupedItems = Array.from(
+        transformed.reduce((map, item) => {
+          const existing = map.get(item.productId);
+          if (existing) {
+            existing.quantity += item.quantity;
+          } else {
+            map.set(item.productId, { ...item });
+          }
+          return map;
+        }, new Map<string, CartItem>()).values()
+      );
+
+      console.log("Transformed cart items:", groupedItems);
+      setCartItems(groupedItems);
     } catch (err: any) {
       console.error("Failed to fetch cart:", err);
       setCartItems([]);
@@ -158,6 +174,20 @@ const Cart = () => {
     (acc, item) => acc + item.price * item.quantity,
     0
   );
+
+  const handleCheckout = () => {
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    if (!token) {
+      toast({ title: "Login required", variant: "destructive" });
+      navigate("/login");
+      return;
+    }
+    if (visibleItems.length === 0) {
+      toast({ title: "Your cart is empty", variant: "destructive" });
+      return;
+    }
+    navigate("/checkout", { state: { items: visibleItems, total: totalAmount } });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -194,7 +224,56 @@ const Cart = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {visibleItems.map((item) => (
                       <div key={item._id} className="max-w-sm">
-                        <BookCard book={item.product} />
+                        <BookCard 
+                          book={item.product}
+                          quantity={item.quantity}
+                          maxQuantity={item.product.stockQuantity || 1}
+                          onQuantityChange={async (newQuantity) => {
+                            if (newQuantity < 1) return;
+                            const prevQty = item.quantity;
+                            const diff = newQuantity - prevQty;
+
+                            // optimistic UI update
+                            setCartItems((prev) =>
+                              prev.map((i) =>
+                                i._id === item._id
+                                  ? { ...i, quantity: newQuantity }
+                                  : i
+                              )
+                            );
+                            updateQuantity(item.productId, newQuantity);
+
+                            const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+                            if (!token) {
+                              toast({ title: "Login required", variant: "destructive" });
+                              return;
+                            }
+
+                            try {
+                              if (diff > 0) {
+                                const cartItems = Array.from({ length: diff }, () => ({
+                                  product: item.productId,
+                                  price: item.price,
+                                }));
+                                await axios.post("/api/cart", { cartItems }, {
+                                  headers: { "auth-token": token },
+                                });
+                              } else if (diff < 0) {
+                                const removeCount = Math.abs(diff);
+                                for (let i = 0; i < removeCount; i++) {
+                                  await axios.post("/api/cart/remove-product", { productId: item.productId }, {
+                                    headers: { "auth-token": token },
+                                  });
+                                }
+                              }
+                              await refreshCart();
+                            } catch (err: any) {
+                              console.error("Failed to update quantity:", err);
+                              toast({ title: "Cart error", variant: "destructive" });
+                              await refreshCart();
+                            }
+                          }}
+                        />
                       </div>
                     ))}
                   </div>
@@ -204,7 +283,7 @@ const Cart = () => {
                   <p className="text-xl font-semibold mb-4">
                     Total: ₹{totalAmount.toFixed(2)}
                   </p>
-                  <Button size="lg" className="w-full">
+                  <Button size="lg" className="w-full" onClick={handleCheckout}>
                     Proceed to Checkout
                   </Button>
                 </div>
