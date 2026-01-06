@@ -20,6 +20,7 @@ import Login from "./pages/Login";
 import Checkout from "./pages/Checkout";
 import Account from "./pages/Account";
 import Orders from "./pages/Orders";
+import SavedAddresses from "./pages/SavedAddresses";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const App = () => (
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/account" element={<Account />} />
           <Route path="/orders" element={<Orders />} />
+          <Route path="/saved-addresses" element={<SavedAddresses />} />
           <Route path="/login" element={<Login />} />
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

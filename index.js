@@ -87,6 +87,10 @@ app.post("/api/contact", sendContactEmail);
 const cartRoutes = require("./routes/cartRoutes.js");
 app.use("/api/cart", cartRoutes);
 
+// New Route for Address
+const addressRoutes = require("./routes/addressRoutes.js");
+app.use("/api/address", addressRoutes);
+
 // Serve static files from the Vite build
 app.use(express.static(path.join(__dirname, "client", "dist")));
 
