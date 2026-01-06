@@ -57,7 +57,12 @@ const Navbar = () => {
   }, []);
 
   const handleProfileClick = () => {
-    setProfileSheetOpen(true);
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+    } else {
+      setProfileSheetOpen(true);
+    }
   };
 
   return (
