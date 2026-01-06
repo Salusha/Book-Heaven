@@ -15,6 +15,7 @@ export interface Book {
   language: string;
   coverImage: string;
   inStock: boolean;
+  stockQuantity?: number;
   featured: boolean;
   bestseller: boolean;
   newRelease: boolean;
