@@ -47,16 +47,17 @@ exports.getCartItems = catchAsyncErrors(async (req, res, next) => {
 exports.deleteCartItem = catchAsyncErrors(async (req, res, next) => {
     const cart = await Cart.findOne({ user: req.user._id });
     const productId=req.body.productId;
-    const cartItems = cart.cartItems;
-    const index = cartItems.findIndex(item => item.product.toString() === productId.toString());
-    // cartItems.splice(index, 1);
-    // await cart.save();
-    // res.status(200).json({ success: true,length:cart.cartItems.length });
-     if (index > -1) {
-        cartItems.splice(index, 1);
+    
+    // Remove ALL instances of the product from cart, not just one
+    const initialLength = cart.cartItems.length;
+    cart.cartItems = cart.cartItems.filter(item => item.product.toString() !== productId.toString());
+    
+    if (cart.cartItems.length < initialLength) {
+        // Product was found and removed
         await cart.save();
         res.status(200).json({ success: true, length: cart.cartItems.length });
     } else {
+        // Product was not found in cart
         res.status(404).json({ success: false, message: "Product not found in cart" });
     }
 });//deleteCartItem
