@@ -16,6 +16,9 @@ interface BookCardProps {
   className?: string;
   showFullDescription?: boolean;
   layout?: "grid" | "list";
+  quantity?: number;
+  maxQuantity?: number;
+  onQuantityChange?: (quantity: number) => void;
 }
 
 const BookCard = ({
@@ -23,6 +26,9 @@ const BookCard = ({
   className,
   showFullDescription = false,
   layout = "grid",
+  quantity = 1,
+  maxQuantity = 999,
+  onQuantityChange,
 }: BookCardProps) => {
   const navigate = useNavigate();
   const isList = layout === "list";
@@ -41,7 +47,7 @@ const BookCard = ({
   const handleToggleWishlist = async () => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     if (!token) {
-      toast({ title: "Login required", description: "Please login to manage your wishlist.", variant: "destructive" });
+      toast({ title: "Login required", variant: "destructive" });
       navigate("/login");
       return;
     }
@@ -54,18 +60,17 @@ const BookCard = ({
           headers: { "auth-token": token },
         });
         removeFromWishlist(book._id);
-        toast({ title: "Removed from wishlist", description: `${book.title} removed from your wishlist.` });
+        toast({ title: "Removed from wishlist" });
       } else {
         // Add to wishlist
         await axios.post(`${apiBaseUrl}/api/wishlist/addtowishlist/${book._id}`, null, {
           headers: { "auth-token": token },
         });
         addToWishlist(book._id);
-        toast({ title: "Added to wishlist", description: `${book.title} saved to your wishlist.` });
+        toast({ title: "Added to wishlist" });
       }
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.response?.data?.errors?.detail || "Unable to update wishlist";
-      toast({ title: "Wishlist error", description: msg, variant: "destructive" });
+      toast({ title: "Wishlist error", variant: "destructive" });
     } finally {
       setAdding(false);
     }
@@ -74,7 +79,7 @@ const BookCard = ({
   const handleAddToCart = async () => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     if (!token) {
-      toast({ title: "Login required", description: "Please login to add items to cart.", variant: "destructive" });
+      toast({ title: "Login required", variant: "destructive" });
       navigate("/login");
       return;
     }
@@ -86,7 +91,7 @@ const BookCard = ({
           headers: { "auth-token": token },
         });
         removeIdFromCart(book._id);
-        toast({ title: "Removed from cart", description: `${book.title} removed from your cart.` });
+        toast({ title: "Removed from cart" });
       } else {
         await axios.post(`${apiBaseUrl}/api/cart`, {
           cartItems: {
@@ -97,11 +102,10 @@ const BookCard = ({
           headers: { "auth-token": token },
         });
         addIdToCart(book._id);
-        toast({ title: "Added to cart", description: `${book.title} added to your cart.` });
+        toast({ title: "Added to cart" });
       }
     } catch (err: any) {
-      const msg = err?.response?.data?.message || "Unable to add to cart";
-      toast({ title: "Cart error", description: msg, variant: "destructive" });
+      toast({ title: "Cart error", variant: "destructive" });
     } finally {
       setAddingToCart(false);
     }
@@ -110,10 +114,19 @@ const BookCard = ({
   return (
     <Card
       className={cn(
-        "group overflow-hidden transition-all duration-200 hover:shadow-lg",
+        "group overflow-hidden transition-all duration-200 hover:shadow-lg cursor-pointer",
         isList && "flex flex-col md:flex-row h-full",
         className,
       )}
+      role="button"
+      tabIndex={0}
+      onClick={() => navigate(`/book/${book._id}`)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          navigate(`/book/${book._id}`);
+        }
+      }}
     >
       <div
         className={cn(
@@ -159,16 +172,20 @@ const BookCard = ({
             variant={inWishlist ? "default" : "secondary"} 
             size="icon" 
             className={cn("h-8 w-8", inWishlist && "bg-red-500 hover:bg-red-600")}
-            onClick={handleToggleWishlist} 
+            onClick={(e) => { e.stopPropagation(); handleToggleWishlist(); }} 
             disabled={adding}
           >
             <Heart className={cn("h-4 w-4", inWishlist && "fill-current")} />
           </Button>
-          <Link to={`/book/${book._id}`}>
-            <Button variant="secondary" size="icon" className="h-8 w-8">
-              <Eye className="h-4 w-4" />
-            </Button>
-          </Link>
+          <Button 
+            variant={inCart ? "destructive" : "secondary"}
+            size="icon" 
+            className="h-8 w-8"
+            onClick={(e) => { e.stopPropagation(); handleAddToCart(); }}
+            disabled={addingToCart || !book.inStock}
+          >
+            <ShoppingCart className="h-4 w-4" strokeWidth={2.5} />
+          </Button>
         </div>
 
         {/* Out of Stock Overlay */}
@@ -179,8 +196,8 @@ const BookCard = ({
         )}
       </div>
 
-      <CardContent className={cn("p-4", isList && "flex-1 flex flex-col gap-2") }>
-        <div className="space-y-2">
+      <CardContent className={cn("px-4 pb-4 pt-1", isList && "flex-1 flex flex-col gap-2") }>
+        <div className="space-y-0">
           {/* Category */}
           <Link
             to={`/categories/${book.category.toLowerCase().replace(/\s+/g, "-")}`}
@@ -243,42 +260,44 @@ const BookCard = ({
           )}
 
           {/* Price */}
-          <div className="flex items-center space-x-2">
-            <span className="text-lg font-bold text-primary">
-              ₹{book.price.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-            </span>
-            {book.originalPrice && (
-              <span className="text-sm text-muted-foreground line-through">
-                ₹{book.originalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="text-lg font-bold text-primary">
+                ₹{book.price.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
               </span>
+              {book.originalPrice && (
+                <span className="text-sm text-muted-foreground line-through">
+                  ₹{book.originalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                </span>
+              )}
+            </div>
+            {onQuantityChange && (
+              <div className="flex items-center gap-1 border rounded">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (quantity > 1) onQuantityChange(quantity - 1);
+                  }}
+                  className="px-1.5 py-0.5 hover:bg-muted transition-colors"
+                >
+                  −
+                </button>
+                <span className="px-1.5 py-0.5 min-w-6 text-center text-sm">{quantity}</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (quantity < maxQuantity) onQuantityChange(quantity + 1);
+                  }}
+                  className="px-1.5 py-0.5 hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={quantity >= maxQuantity}
+                >
+                  +
+                </button>
+              </div>
             )}
           </div>
         </div>
       </CardContent>
-
-      <CardFooter className="p-4 pt-0">
-        <div className="flex w-full gap-2">
-          <Button
-            className="flex-1"
-            disabled={!book.inStock || addingToCart}
-            size="sm"
-            variant={inCart ? "destructive" : "default"}
-            onClick={handleAddToCart}
-          >
-            <ShoppingCart className="h-4 w-4 mr-2" />
-            {addingToCart
-              ? (inCart ? "Removing..." : "Adding...")
-              : book.inStock
-                ? (inCart ? "Remove" : "Add to Cart")
-                : "Out of Stock"}
-          </Button>
-          <Link to={`/book/${book._id}`} className="flex-shrink-0">
-            <Button variant="outline" size="sm">
-              View Details
-            </Button>
-          </Link>
-        </div>
-      </CardFooter>
     </Card>
   );
 };
