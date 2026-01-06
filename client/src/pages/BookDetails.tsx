@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,16 +22,23 @@ import {
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { cn } from "@/lib/utils";
+import { useWishlist } from "@/contexts/WishlistContext";
+import { useCart } from "@/contexts/CartContext";
+import { toast } from "@/components/ui/use-toast";
 
 const BookDetails = () => {
   const { id } = useParams<{ id: string }>();
   const [quantity, setQuantity] = useState(1);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const navigate = useNavigate();
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [updatingWishlist, setUpdatingWishlist] = useState(false);
 
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
+  const { isInWishlist, addToWishlist, removeFromWishlist, refreshWishlist } = useWishlist();
+  const { addToCart: addIdToCart, isInCart, refreshCart, getQuantity, removeFromCart } = useCart();
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -56,8 +63,9 @@ const BookDetails = () => {
   useEffect(() => {
     if (!product) return;
     const stock = Math.max(0, Number(product.Stock) || 0);
-    setQuantity(stock > 0 ? 1 : 0);
-  }, [product]);
+    const cartQuantity = getQuantity(product._id);
+    setQuantity(cartQuantity > 0 ? cartQuantity : (stock > 0 ? 1 : 0));
+  }, [product, getQuantity]);
 
   if (loading) {
     return (
@@ -98,6 +106,7 @@ const BookDetails = () => {
     author: product.author,
     description: product.description,
     price: product.price,
+    originalPrice: product.originalPrice ?? null,
     rating: product.ratings || 0,
     reviewCount: product.numOfReviews || 0,
     category: product.category,
@@ -111,9 +120,73 @@ const BookDetails = () => {
     bestseller: Boolean(product.bestseller),
     newRelease: Boolean(product.newRelease),
     featured: Boolean(product.featured),
+    isbn: product.isbn || product._id || "N/A",
   };
 
   const discountPercentage = 0;
+  const lowStock = book.stock < 5;
+
+  const inWishlist = isInWishlist(book._id);
+  const inCart = isInCart ? isInCart(book._id) : false;
+
+  const ensureAuth = () => {
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    if (!token) {
+      toast({ title: "Login required", variant: "destructive" });
+      navigate("/login");
+      return null;
+    }
+    return token;
+  };
+
+  const handleToggleWishlist = async () => {
+    const token = ensureAuth();
+    if (!token) return;
+    try {
+      setUpdatingWishlist(true);
+      if (inWishlist) {
+        await axios.delete(`${apiBaseUrl}/api/wishlist/removefromwishlist/${book._id}`, {
+          headers: { "auth-token": token },
+        });
+        removeFromWishlist(book._id);
+        toast({ title: "Removed from wishlist" });
+      } else {
+        await axios.post(`${apiBaseUrl}/api/wishlist/addtowishlist/${book._id}`, null, {
+          headers: { "auth-token": token },
+        });
+        addToWishlist(book._id);
+        toast({ title: "Added to wishlist" });
+      }
+      refreshWishlist();
+    } catch (err: any) {
+      toast({ title: "Wishlist error", variant: "destructive" });
+    } finally {
+      setUpdatingWishlist(false);
+    }
+  };
+
+  const handleAddToCart = async () => {
+    const token = ensureAuth();
+    if (!token) return;
+    try {
+      setAddingToCart(true);
+      if (inCart) {
+        await axios.post(`${apiBaseUrl}/api/cart/remove-product`, { productId: book._id }, { headers: { "auth-token": token } });
+        removeFromCart(book._id);
+        setQuantity(1);
+        toast({ title: "Removed from cart" });
+      } else {
+        const items = [{ product: book._id, price: book.price }];
+        await axios.post(`${apiBaseUrl}/api/cart`, { cartItems: items }, { headers: { "auth-token": token } });
+        await refreshCart();
+        toast({ title: "Added to cart" });
+      }
+    } catch (err: any) {
+      toast({ title: "Cart error", variant: "destructive" });
+    } finally {
+      setAddingToCart(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -202,43 +275,25 @@ const BookDetails = () => {
             <Card>
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  <div className="flex items-center space-x-3">
-                    <span className="font-medium">Quantity:</span>
-                    <div className="flex items-center border rounded-md">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        disabled={quantity <= 1 || !book.inStock}
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span className="px-4 py-2 min-w-[3rem] text-center">{quantity}</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setQuantity(Math.min(book.stock, quantity + 1))}
-                        disabled={!book.inStock || quantity >= book.stock}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <p className="text-sm text-muted-foreground">Available: {book.stock}</p>
-                  </div>
-
                   <div className="flex gap-2">
-                    <Button className="flex-1" disabled={!book.inStock || quantity < 1} size="lg">
+                    <Button className="flex-1" variant={inCart ? "destructive" : "default"} disabled={!book.inStock || addingToCart} size="lg" onClick={handleAddToCart}>
                       <ShoppingCart className="h-4 w-4 mr-2" />
-                      {book.inStock ? "Add to Cart" : "Out of Stock"}
+                      {addingToCart ? (inCart ? "Removing..." : "Adding...") : (book.inStock ? (inCart ? "Remove from Cart" : "Add to Cart") : "Out of Stock")}
                     </Button>
-                    <Button variant="outline" size="lg" onClick={() => setIsFavorite(!isFavorite)}>
-                      <Heart className={cn("h-4 w-4", isFavorite ? "fill-red-500 text-red-500" : "")} />
+                    <Button variant="outline" size="lg" onClick={handleToggleWishlist} disabled={updatingWishlist}>
+                      <Heart className={cn("h-4 w-4", inWishlist ? "fill-red-500 text-red-500" : "")} />
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button variant="outline" size="sm">Add to Wishlist</Button>
-                    <Button variant="outline" size="sm">Buy Now</Button>
+                  <div className="grid grid-cols-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      disabled={!book.inStock}
+                    >
+                      {book.inStock ? "Buy Now" : "Out of Stock"}
+                    </Button>
                   </div>
                 </div>
               </CardContent>
