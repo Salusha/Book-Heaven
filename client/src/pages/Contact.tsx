@@ -1,4 +1,5 @@
 import { useState } from "react";
+import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,9 @@ import Footer from "@/components/Footer";
 
 const Contact = () => {
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const apiBaseUrl = (import.meta as any).env?.VITE_API_BASE_URL || "";
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -36,11 +40,36 @@ const Contact = () => {
     message: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically send the form data to your backend
-    console.log("Form submitted:", formData);
-    setFormSubmitted(true);
+    setSubmitError(null);
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    if (!token) {
+      setSubmitError("Please log in to send a message.");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      // Map fields to feedback payload expected by backend
+      const payload = {
+        topic: formData.category || formData.subject || "General Inquiry",
+        feedback: `${formData.subject}\n\n${formData.message}\n\nFrom: ${formData.name} <${formData.email}>\nCategory: ${formData.category || "general"}`,
+      };
+
+      await axios.post(`${apiBaseUrl}/customer/add-feedback`, payload, {
+        headers: { "auth-token": token },
+      });
+
+      setFormSubmitted(true);
+      setFormData({ name: "", email: "", subject: "", category: "", message: "" });
+    } catch (err: any) {
+      const message = err?.response?.data?.message || "Failed to send message. Please try again.";
+      setSubmitError(message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -264,9 +293,13 @@ const Contact = () => {
                   />
                 </div>
 
-                <Button type="submit" className="w-full">
+                {submitError && (
+                  <p className="text-sm text-destructive text-center">{submitError}</p>
+                )}
+
+                <Button type="submit" className="w-full" disabled={submitting}>
                   <Send className="h-4 w-4 mr-2" />
-                  Send Message
+                  {submitting ? "Sending..." : "Send Message"}
                 </Button>
               </form>
             </CardContent>
