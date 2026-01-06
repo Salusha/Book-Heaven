@@ -172,7 +172,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -187,6 +187,7 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const { refreshWishlist } = useWishlist();
+  const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,7 +216,8 @@ const Login = () => {
       // Refresh wishlist for this user
       await refreshWishlist();
 
-      // ✅ No redirect — stay on login page
+      // ✅ Navigate to browse page after successful login
+      navigate("/browse");
     } catch (error: any) {
       toast({
         title: "Login Failed",
