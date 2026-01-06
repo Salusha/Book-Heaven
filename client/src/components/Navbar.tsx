@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -23,10 +23,13 @@ import {
 import { cn } from "@/lib/utils";
 import { categories } from "@/lib/books-data";
 import axios from "axios";
+import ProfileSheet from "./ProfileSheet";
 
 const Navbar = () => {
+  const navigate = useNavigate();
   const [cartItems] = useState<number>(3); // Mock cart items
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  const [profileSheetOpen, setProfileSheetOpen] = useState<boolean>(false);
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
 
   const slugifyCategory = (name: string) =>
@@ -52,6 +55,10 @@ const Navbar = () => {
     };
     fetchCounts();
   }, []);
+
+  const handleProfileClick = () => {
+    setProfileSheetOpen(true);
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -154,11 +161,9 @@ const Navbar = () => {
   </Link>
 
   {/* Profile/Login */}
-  <Link to="/login">
-    <Button variant="ghost" size="icon">
-      <User className="h-5 w-5" />
-    </Button>
-  </Link>
+  <Button variant="ghost" size="icon" onClick={handleProfileClick}>
+    <User className="h-5 w-5" />
+  </Button>
 
 
             {/* Mobile Menu */}
@@ -212,12 +217,24 @@ const Navbar = () => {
                   >
                     Contact
                   </Link>
+
+                  <button
+                    className="text-left text-lg font-medium"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleProfileClick();
+                    }}
+                  >
+                    Profile
+                  </button>
                 </div>
               </SheetContent>
             </Sheet>
           </div>
         </div>
       </div>
+      {/* Profile Sheet */}
+      <ProfileSheet open={profileSheetOpen} onOpenChange={setProfileSheetOpen} />
     </header>
   );
 };
