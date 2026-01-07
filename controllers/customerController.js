@@ -77,6 +77,7 @@ exports.registerCustomer = catchAsyncErrors(async (req, res, next) => {
 
     // Print the user detail
     const payload = {
+      id: customer._id,
       name,
       email,
     };

@@ -31,7 +31,6 @@ const ProfileSheet = ({ open, onOpenChange }: ProfileSheetProps) => {
   const token = localStorage.getItem("token") || sessionStorage.getItem("token");
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
-  const apiBaseUrl = (import.meta as any).env?.VITE_API_BASE_URL || "";
 
   useEffect(() => {
     if (!open) return;
@@ -45,27 +44,46 @@ const ProfileSheet = ({ open, onOpenChange }: ProfileSheetProps) => {
     setLoading(true);
     const fetchUserProfile = async () => {
       try {
-        const res = await axios.get(`${apiBaseUrl}/customer/me`, {
+        console.log("Fetching profile with token:", token ? "Token exists" : "No token");
+        
+        const res = await axios.get("/customer/me", {
           headers: { "auth-token": token },
         });
 
+        console.log("Profile API Full Response:", res);
+        console.log("Profile API Response Data:", res.data);
+
         const userData =
           res.data?.response?.data?.customer ||
+          res.data?.customer ||
           res.data?.user ||
           res.data?.data?.customer;
 
+        console.log("Parsed user data:", userData);
+
         if (userData) {
           setUser(userData);
+          console.log("User state set successfully");
+        } else {
+          console.error("User data not found in response:", res.data);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to fetch user profile:", err);
+        
+        // If 401 Unauthorized, token is invalid/expired - clear it
+        if (err.response?.status === 401) {
+          console.log("Token is invalid or expired. Clearing tokens...");
+          localStorage.removeItem("token");
+          sessionStorage.removeItem("token");
+          // Don't set user, so it shows the logged-out state
+        }
       } finally {
-        setLoading(false);
+        setTimeout(() => setLoading(false), 300); // Smooth transition
       }
     };
 
     fetchUserProfile();
-  }, [open, token, apiBaseUrl]);
+  }, [open, token]);
 
   const getInitials = (name: string) => {
     return name
@@ -240,7 +258,57 @@ const ProfileSheet = ({ open, onOpenChange }: ProfileSheetProps) => {
               Logout
             </Button>
           </div>
-        ) : null}
+        ) : (
+          // Fallback when logged in but failed to load profile
+          <div className="space-y-4 mt-6">
+            <SheetTitle>Account</SheetTitle>
+            <p className="text-sm text-muted-foreground">
+              Unable to load profile data
+            </p>
+            <Separator className="my-6" />
+            <div className="space-y-2">
+              <button
+                onClick={() => handleNavigate("/account")}
+                className="block w-full text-left text-sm text-muted-foreground hover:text-foreground py-2 transition-colors"
+              >
+                Account
+              </button>
+              <button
+                onClick={() => handleNavigate("/orders")}
+                className="block w-full text-left text-sm text-muted-foreground hover:text-foreground py-2 transition-colors"
+              >
+                Orders
+              </button>
+              <button
+                onClick={() => handleNavigate("/wishlist")}
+                className="block w-full text-left text-sm text-muted-foreground hover:text-foreground py-2 transition-colors"
+              >
+                Wishlist
+              </button>
+              <button
+                onClick={() => handleNavigate("/cart")}
+                className="block w-full text-left text-sm text-muted-foreground hover:text-foreground py-2 transition-colors"
+              >
+                Cart
+              </button>
+              <button
+                onClick={() => handleNavigate("/contact")}
+                className="block w-full text-left text-sm text-muted-foreground hover:text-foreground py-2 transition-colors"
+              >
+                Contact Us
+              </button>
+            </div>
+            <Separator className="my-6" />
+            <Button
+              variant="destructive"
+              className="w-full gap-2"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
+          </div>
+        )}
       </SheetContent>
     </Sheet>
   );
