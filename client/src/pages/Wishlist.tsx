@@ -56,7 +56,7 @@ const Wishlist = () => {
         // Silently handle any errors - just show empty wishlist
         setWishlistItems([]);
       } finally {
-        setLoading(false);
+        setTimeout(() => setLoading(false), 400); // Delay to smooth appearance
       }
     };
 
