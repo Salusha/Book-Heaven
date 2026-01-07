@@ -301,70 +301,50 @@ const BookDetails = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="details" className="mb-12">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="reviews">Reviews</TabsTrigger>
-            <TabsTrigger value="recommendations">More Like This</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="details" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Book Details</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <BookOpen className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">ISBN:</span>
-                      <span>{book.isbn}</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <Building className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Publisher:</span>
-                      <span>{book.publisher}</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Published:</span>
-                      <span>{new Date(book.publishedDate).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <Package className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Pages:</span>
-                      <span>{book.pages}</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <Globe className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Language:</span>
-                      <span>{book.language}</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Category:</span>
-                      <Link to={`/categories/${book.category.toLowerCase().replace(/\s+/g, "-")}`} className="text-primary hover:underline">{book.category}</Link>
-                    </div>
-                  </div>
+        {/* Tabs navigation removed */}
+        <Card className="mt-8 mb-6">
+          <CardHeader>
+            <CardTitle>Book Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <BookOpen className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">ISBN:</span>
+                  <span>{book.isbn}</span>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="reviews" className="mt-6"></TabsContent>
-
-          <TabsContent value="recommendations" className="mt-6">
-            <div className="space-y-6">
-              <h3 className="text-2xl font-bold">You Might Also Like</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <p className="text-muted-foreground">Related products coming soon</p>
+                <div className="flex items-center space-x-3">
+                  <Building className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Publisher:</span>
+                  <span>{book.publisher}</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Published:</span>
+                  <span>{new Date(book.publishedDate).toLocaleDateString()}</span>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Pages:</span>
+                  <span>{book.pages}</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Language:</span>
+                  <span>{book.language}</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Category:</span>
+                  <Link to={`/categories/${book.category.toLowerCase().replace(/\s+/g, "-")}`} className="text-primary hover:underline">{book.category}</Link>
+                </div>
               </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          </CardContent>
+        </Card>
       </div>
 
       <Footer />
