@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "@/components/ui/use-toast";
 import {
   BookOpen,
   Facebook,
@@ -14,6 +17,44 @@ import {
 } from "lucide-react";
 
 const Footer = () => {
+  const [subscribeEmail, setSubscribeEmail] = useState("");
+  const [subscribing, setSubscribing] = useState(false);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const email = subscribeEmail.trim();
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+    if (!isValidEmail) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email to subscribe.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setSubscribing(true);
+      const res = await axios.post("/api/subscribe", { email });
+      toast({
+        title: res.data?.message || "Subscribed",
+        description: "Thanks for subscribing! We'll keep you posted on new books and offers.",
+      });
+      setSubscribeEmail("");
+    } catch (err: any) {
+      const detail = err?.response?.data?.errors?.detail || err?.response?.data?.message || "Unable to subscribe right now.";
+      toast({
+        title: "Subscribe failed",
+        description: detail,
+        variant: "destructive",
+      });
+    } finally {
+      setSubscribing(false);
+    }
+  };
+
   return (
     <footer className="bg-muted/50 border-t">
       <div className="container mx-auto px-4 py-12">
@@ -172,12 +213,18 @@ const Footer = () => {
               Subscribe to our newsletter for book recommendations and exclusive
               offers.
             </p>
-            <div className="flex space-x-2">
-              <Input placeholder="Enter your email" className="flex-1" />
-              <Button type="submit" size="sm">
-                Subscribe
+            <form onSubmit={handleSubscribe} className="flex space-x-2">
+              <Input
+                placeholder="Enter your email"
+                className="flex-1"
+                value={subscribeEmail}
+                onChange={(e) => setSubscribeEmail(e.target.value)}
+                type="email"
+              />
+              <Button type="submit" size="sm" disabled={subscribing}>
+                {subscribing ? "Subscribing..." : "Subscribe"}
               </Button>
-            </div>
+            </form>
 
             <div className="space-y-2 pt-4">
               <div className="flex items-center space-x-2 text-sm text-muted-foreground">
