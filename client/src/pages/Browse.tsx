@@ -55,7 +55,7 @@ const Browse = () => {
     reviewCount: product.numOfReviews ?? 0,
     category: product.category || "General",
     isbn: product.isbn || product._id || "N/A",
-    publisher: product.publisher || "Book Haven",
+    publisher: product.publisher || "Book Heaven",
     publishedDate: product.publishedDate || product.createdAt || new Date().toISOString(),
     pages: product.pages || 0,
     language: product.language || "English",

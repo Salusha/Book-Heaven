@@ -110,7 +110,7 @@ const BookDetails = () => {
     rating: product.ratings || 0,
     reviewCount: product.numOfReviews || 0,
     category: product.category,
-    publisher: product.publisher || "Book Haven",
+    publisher: product.publisher || "Book Heaven",
     publishedDate: product.publishedDate || product.createdAt,
     pages: product.pages || 0,
     language: product.language || "English",

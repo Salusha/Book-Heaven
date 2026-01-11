@@ -134,7 +134,7 @@ const Signup = () => {
           <CardHeader>
             <CardTitle className="text-2xl">Create Account</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Join Book Haven to explore amazing books
+              Join Book Heaven to explore amazing books
             </p>
           </CardHeader>
 

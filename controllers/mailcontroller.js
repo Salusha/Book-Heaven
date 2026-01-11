@@ -7,10 +7,10 @@ exports.sendVerificationEmail = async (email, verificationToken) => {
     const mailOptions = {
       from: `"Book-Heaven 📚" <${process.env.SMTP_EMAIL}>`,
       to: email,
-      subject: "Verify Your Book Haven Email Address",
+      subject: "Verify Your Book Heaven Email Address",
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
-          <h2>Welcome to Book Haven!</h2>
+          <h2>Welcome to Book Heaven!</h2>
           <p>Please verify your email to complete registration.</p>
           <a href="${verificationLink}"
              style="display:inline-block;padding:12px 20px;background:#007bff;color:#fff;text-decoration:none;border-radius:5px;">
@@ -37,7 +37,7 @@ exports.sendResetPasswordEmail = async (email, resetToken) => {
     const mailOptions = {
       from: `"Book-Heaven 📚" <${process.env.SMTP_EMAIL}>`,
       to: email,
-      subject: "Reset Your Book Haven Password",
+      subject: "Reset Your Book Heaven Password",
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
           <h2>Password Reset Request</h2>
