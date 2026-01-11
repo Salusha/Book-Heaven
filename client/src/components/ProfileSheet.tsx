@@ -44,14 +44,11 @@ const ProfileSheet = ({ open, onOpenChange }: ProfileSheetProps) => {
     setLoading(true);
     const fetchUserProfile = async () => {
       try {
-        console.log("Fetching profile with token:", token ? "Token exists" : "No token");
+        // console.log("Fetching profile with token:", token ? "Token exists" : "No token");
         
         const res = await axios.get("/customer/me", {
           headers: { "auth-token": token },
         });
-
-        console.log("Profile API Full Response:", res);
-        console.log("Profile API Response Data:", res.data);
 
         const userData =
           res.data?.response?.data?.customer ||
@@ -59,11 +56,9 @@ const ProfileSheet = ({ open, onOpenChange }: ProfileSheetProps) => {
           res.data?.user ||
           res.data?.data?.customer;
 
-        console.log("Parsed user data:", userData);
-
         if (userData) {
           setUser(userData);
-          console.log("User state set successfully");
+          // console.log("User state set successfully");
         } else {
           console.error("User data not found in response:", res.data);
         }
@@ -72,7 +67,7 @@ const ProfileSheet = ({ open, onOpenChange }: ProfileSheetProps) => {
         
         // If 401 Unauthorized, token is invalid/expired - clear it
         if (err.response?.status === 401) {
-          console.log("Token is invalid or expired. Clearing tokens...");
+          // console.log("Token is invalid or expired. Clearing tokens...");
           localStorage.removeItem("token");
           sessionStorage.removeItem("token");
           // Don't set user, so it shows the logged-out state

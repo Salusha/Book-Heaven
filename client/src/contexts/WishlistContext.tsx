@@ -34,7 +34,7 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
           .filter((id: unknown): id is string => typeof id === "string"),
       );
       setWishlistIds(ids);
-      console.log("Wishlist refreshed for current user, items:", ids.size);
+      // console.log("Wishlist refreshed for current user, items:", ids.size);
     } catch (err) {
       console.error("Failed to fetch wishlist:", err);
       // On auth error, clear wishlist

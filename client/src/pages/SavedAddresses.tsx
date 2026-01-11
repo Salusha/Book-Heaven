@@ -219,7 +219,7 @@ const SavedAddresses = () => {
       const response = await axios.delete(`${apiBaseUrl}/api/address/${id}`, {
         headers: { "auth-token": token },
       });
-      console.log("Delete success:", response.data);
+      // console.log("Delete success:", response.data);
       toast({ title: "Address deleted successfully!" });
       fetchAddresses();
     } catch (error: any) {

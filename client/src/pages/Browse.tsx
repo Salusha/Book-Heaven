@@ -72,11 +72,11 @@ const Browse = () => {
     try {
       const response = await axios.get(`${apiBaseUrl}/api/products`);
       const products = response.data?.products ?? [];
-      console.log("Loaded products:", products.length);
-      if (products.length > 0) {
-        console.log("First product:", products[0]);
-        console.log("Ratings value:", products[0].ratings);
-      }
+      // console.log("Loaded products:", products.length);
+      // if (products.length > 0) {
+      //   console.log("First product:", products[0]);
+      //   console.log("Ratings value:", products[0].ratings);
+      // }
       setBooksData(products.map(mapProductToBook));
     } catch (err) {
       console.error("Failed to load products", err);
