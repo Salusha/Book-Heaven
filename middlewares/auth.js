@@ -30,7 +30,7 @@ exports.isAuthenticatedUser = catchAsyncErrors(async (req, res, next) => {
   }
 
   req.user = user;
-  console.log("verified successfully");
+  // User verified
 
   next();
 });
