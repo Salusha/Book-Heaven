@@ -160,7 +160,7 @@ const About = () => {
           </div>
           <div className="relative">
             <img
-              src="aboutus.jpg"
+              src="https://res.cloudinary.com/do30pfwn3/image/upload/v1768150283/aboutus_pk4kl9.jpg"
               alt="Book Heaven team"
               className="w-full h-96 object-cover rounded-lg shadow-lg"
             />

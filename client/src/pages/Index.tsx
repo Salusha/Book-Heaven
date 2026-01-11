@@ -209,7 +209,7 @@ const Index = () => {
     <div className="relative mt-8">
       <Link to="/book/1">
         <img
-          src="https://images.unsplash.com/photo-1558901357-ca41e027e43a?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Ym9va3xlbnwwfDJ8MHx8fDA%3D"
+          src="https://res.cloudinary.com/do30pfwn3/image/upload/v1768150839/home1_obuyyc.avif"
           alt="Book 1"
           className="w-full h-48 object-cover rounded-lg shadow-lg"
         />
@@ -218,7 +218,7 @@ const Index = () => {
     <div className="relative">
       <Link to="/book/2">
         <img
-          src="https://images.unsplash.com/photo-1651841689044-00521ab0fa66?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fGJvb2tzfGVufDB8MnwwfHx8MA%3D%3D"
+          src="https://res.cloudinary.com/do30pfwn3/image/upload/v1768150791/home2_lz3lzw.avif"
           alt="Book 2"
           className="w-full h-48 object-cover rounded-lg shadow-lg"
         />
@@ -227,7 +227,7 @@ const Index = () => {
     <div className="relative mt-8">
       <Link to="/book/3">
         <img
-          src="https://media.istockphoto.com/id/1022236966/photo/conceptual-background-on-history-education-literature-topics.webp?a=1&b=1&s=612x612&w=0&k=20&c=4CmFmCuY7vbIWBX9U53fk4Dphr4PmsAikOfN5QKoOEA="
+          src="https://res.cloudinary.com/do30pfwn3/image/upload/v1768150852/home3_fofr7h.webp"
           alt="Book 3"
           className="w-full h-48 object-cover rounded-lg shadow-lg"
         />
