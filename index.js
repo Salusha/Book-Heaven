@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
 const app = express();
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
@@ -117,12 +118,16 @@ const addressRoutes = require("./routes/addressRoutes.js");
 app.use("/api/address", addressRoutes);
 
 // Serve static files from the Vite build
-app.use(express.static(path.join(__dirname, "client", "dist")));
-
-// Fallback route: send index.html for all non-API GET routes
-app.get(/^\/(?!api).*/, (req, res) => {
-  res.sendFile(path.join(__dirname, "client", "dist", "index.html"));
-});
+const clientDist = path.join(__dirname, "client", "dist");
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  // Fallback route: send index.html for all non-API GET routes
+  app.get(/^\/(?!api).*/, (req, res) => {
+    res.sendFile(path.join(clientDist, "index.html"));
+  });
+} else {
+  console.log("Client build not found. Serving API only.");
+}
 
 
 // Start the server *after* all route declarations
