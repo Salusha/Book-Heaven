@@ -186,6 +186,8 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showResend, setShowResend] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState("");
   const { refreshWishlist } = useWishlist();
   const navigate = useNavigate();
 
@@ -219,13 +221,46 @@ const Login = () => {
       // ✅ Navigate to browse page after successful login
       navigate("/browse");
     } catch (error: any) {
-      toast({
-        title: "Login Failed",
-        description: error.response?.data?.message || "Something went wrong",
-        variant: "destructive",
-      });
+      const status = error?.response?.status;
+      const apiErrors = error?.response?.data?.errors;
+      const detail = apiErrors?.detail || error?.response?.data?.message || "Something went wrong. Please try again.";
+
+      if (status === 403 && (apiErrors?.title === "Email not verified" || /verify/i.test(detail))) {
+        toast({
+          title: "Verify Your Email",
+          description: "Please verify your email before logging in. Check your inbox for the verification link.",
+          variant: "destructive",
+        });
+        setShowResend(true);
+        setPendingEmail(email);
+      } else {
+        toast({
+          title: "Login Failed",
+          description: detail,
+          variant: "destructive",
+        });
+        setShowResend(false);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!pendingEmail) return;
+    try {
+      const res = await axios.post("/customer/resend-verification", { email: pendingEmail });
+      toast({
+        title: "Verification Email Resent",
+        description: res.data?.message || "Please check your inbox.",
+      });
+    } catch (err: any) {
+      const msg = err?.response?.data?.errors?.detail || err?.response?.data?.message || "Unable to resend email.";
+      toast({
+        title: "Resend Failed",
+        description: msg,
+        variant: "destructive",
+      });
     }
   };
 
@@ -309,6 +344,19 @@ const Login = () => {
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Logging in..." : "Login"}
               </Button>
+
+              {showResend && (
+                <div className="text-sm text-muted-foreground text-center">
+                  Didn’t get the email?
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    className="ml-1 text-primary hover:underline"
+                  >
+                    Resend verification link
+                  </button>
+                </div>
+              )}
 
               <div className="text-sm text-muted-foreground text-center">
                 Don’t have an account?{" "}

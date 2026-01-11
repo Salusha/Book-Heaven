@@ -18,6 +18,12 @@ const customerSchema = new mongoose.Schema({
     unique: true,
     validate: [validator.isEmail, "Please Enter a valid Email"],
   },
+  emailVerified: {
+    type: Boolean,
+    default: false,
+  },
+  emailVerificationToken: String,
+  emailVerificationExpire: Date,
   password: {
     type: String,
     required: [true, "Please Enter Your Password"],

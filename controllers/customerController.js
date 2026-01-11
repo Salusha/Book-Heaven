@@ -2,13 +2,13 @@ const catchAsyncErrors = require("../middlewares/catchAsyncErrors.js");
 const Customer = require("../models/customerSchema.js");
 const Feedback = require("../models/feedbackSchema.js");
 const sendToken = require("../utils/jwtToken");
-// const errorHandler = require("../utils/errorHandler");
 const { errorHandler } = require("../utils/errorHandler");
-
 const responseHandler = require("../utils/responseHandler");
 const jwt = require("jsonwebtoken");
+const { sendVerificationEmail, sendResetPasswordEmail } = require("./mailcontroller.js");
 require("dotenv").config();
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const saltRounds = 10;
 const validator = require("validator");
 const disposableEmailDomains = require("disposable-email-domains");
@@ -20,10 +20,10 @@ exports.registerCustomer = catchAsyncErrors(async (req, res, next) => {
     // Validate email format
     if (!validator.isEmail(email)) {
       return res
-        .status(400) // Changed to 400 for bad request
+        .status(400)
         .send(
           errorHandler(
-            404,
+            400,
             "Invalid request",
             "Please provide a valid email id"
           )
@@ -34,82 +34,253 @@ exports.registerCustomer = catchAsyncErrors(async (req, res, next) => {
     const domain = email.split("@")[1];
     if (disposableEmailDomains.includes(domain)) {
       return res
-        .status(404)
+        .status(400)
         .send(
           errorHandler(
-            404,
+            400,
             "Invalid request",
             "Disposable email addresses are not allowed"
           )
         );
     }
 
+    // Check if email already exists
+    const existingCustomer = await Customer.findOne({ email });
+    if (existingCustomer) {
+      return res
+        .status(400)
+        .send(
+          errorHandler(
+            400,
+            "Invalid request",
+            "Email already registered. Please login or use a different email."
+          )
+        );
+    }
+
+    // Generate verification token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto.createHash("sha256").update(verificationToken).digest("hex");
+    const emailVerificationExpire = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Create customer with unverified email
     const customer = await Customer.create({
       name,
       email,
       password,
+      emailVerificationToken: hashedToken,
+      emailVerificationExpire,
+      emailVerified: false,
       avatar: {
         public_id: "This is Public ID",
         url: "ThisisSecureUrl",
       },
     });
 
-    // sendToken(customer, 201, res);
-    const refreshToken = jwt.sign(
-      { id: customer._id },
-      process.env.REFRESH_TOKEN_SECRET
-    );
+    console.log("Customer created:", customer._id);
+    console.log("Sending verification email to:", email);
 
-    if (customer) {
-      await Customer.findByIdAndUpdate(customer._id, { refreshToken });
-    }
+    // Send verification email with unhashed token
+    const emailSent = await sendVerificationEmail(email, verificationToken);
+    console.log("Email send result:", emailSent);
 
-    // Access JWT secret key from environment variables
-    const jwtSecret = process.env.JWT_SECRET;
-
-    // Check if jwtSecret is defined
-    if (!jwtSecret) {
-      console.error(
-        "JWT secret key is not defined in the environment variables."
-      );
-      process.exit(1); // Terminate the application
-    }
-
-    // Print the user detail
-    const payload = {
-      id: customer._id,
-      name,
-      email,
-    };
-
-    const token = jwt.sign(payload, jwtSecret);
-    // sendToken(customer, 201, res);
-
-    const options = {
-      expires: new Date(
-        Date.now() +
-          process.env.REFRESH_TOKEN_COOKIE_EXPIRE * 24 * 60 * 60 * 1000
-      ),
-      httpOnly: true,
-    };
-
-    // Send response with customer and tokens
-    res.status(201).cookie("refreshToken", refreshToken, options).json({
+    // Return success response without token
+    res.status(201).json({
       success: true,
-      refreshToken,
-      customer :{
+      message: "Registration successful! Please check your email to verify your account.",
+      customer: {
         name: customer.name,
         email: customer.email,
-        avatar: customer.avatar,
-        role: customer.role,
-          _id: customer._id,
-        createdAt: customer.createdAt,
+        _id: customer._id,
+        emailVerified: customer.emailVerified,
       },
-      token,
     });
   } catch (error) {
     console.error("Error occurred during user registration:", error);
-    next(error); // Pass the error to the error handling middleware
+    next(error);
+  }
+});
+
+// VERIFY EMAIL
+exports.verifyEmail = catchAsyncErrors(async (req, res, next) => {
+  const { token } = req.query;
+
+  if (!token) {
+    return res
+      .status(400)
+      .send(
+        errorHandler(
+          400,
+          "Invalid request",
+          "Verification token is missing"
+        )
+      );
+  }
+
+  try {
+    // Hash the token to compare with stored hashed token
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const customer = await Customer.findOne({
+      emailVerificationToken: hashedToken,
+      emailVerificationExpire: { $gt: Date.now() },
+    });
+
+    if (!customer) {
+      return res
+        .status(400)
+        .send(
+          errorHandler(
+            400,
+            "Invalid token",
+            "Verification token is invalid or has expired"
+          )
+        );
+    }
+
+    // Mark email as verified
+    customer.emailVerified = true;
+    customer.emailVerificationToken = undefined;
+    customer.emailVerificationExpire = undefined;
+    await customer.save();
+
+    // Generate JWT token for immediate login
+    const jwtSecret = process.env.JWT_SECRET;
+    const payload = {
+      id: customer._id,
+      name: customer.name,
+      email: customer.email,
+    };
+    const authToken = jwt.sign(payload, jwtSecret);
+
+    return res.status(200).json({
+      success: true,
+      message: "Email verified successfully! You are now logged in.",
+      token: authToken,
+      customer: {
+        name: customer.name,
+        email: customer.email,
+        _id: customer._id,
+        emailVerified: customer.emailVerified,
+      },
+    });
+  } catch (error) {
+    console.error("Error verifying email:", error);
+    next(error);
+  }
+});
+
+// DEBUG: VERIFY EMAIL BY EMAIL ADDRESS (Development Only)
+exports.debugVerifyEmail = catchAsyncErrors(async (req, res, next) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res
+      .status(400)
+      .send(
+        errorHandler(
+          400,
+          "Missing email",
+          "Please provide an email address"
+        )
+      );
+  }
+
+  try {
+    const customer = await Customer.findOne({ email });
+
+    if (!customer) {
+      return res
+        .status(404)
+        .send(
+          errorHandler(
+            404,
+            "User not found",
+            "No user registered with this email"
+          )
+        );
+    }
+
+    // Mark email as verified
+    customer.emailVerified = true;
+    customer.emailVerificationToken = undefined;
+    customer.emailVerificationExpire = undefined;
+    await customer.save();
+
+    // Generate JWT token
+    const jwtSecret = process.env.JWT_SECRET;
+    const payload = {
+      id: customer._id,
+      name: customer.name,
+      email: customer.email,
+    };
+    const authToken = jwt.sign(payload, jwtSecret);
+
+    return res.status(200).json({
+      success: true,
+      message: "Email verified successfully! (DEBUG MODE)",
+      token: authToken,
+      customer: {
+        name: customer.name,
+        email: customer.email,
+        _id: customer._id,
+        emailVerified: customer.emailVerified,
+      },
+    });
+  } catch (error) {
+    console.error("Error in debug verify email:", error);
+    next(error);
+  }
+});
+
+// RESEND VERIFICATION EMAIL
+exports.resendVerificationEmail = catchAsyncErrors(async (req, res, next) => {
+  const { email } = req.body;
+
+  if (!email || !validator.isEmail(email)) {
+    return res
+      .status(400)
+      .send(
+        errorHandler(400, "Invalid request", "Please provide a valid email address")
+      );
+  }
+
+  try {
+    const customer = await Customer.findOne({ email });
+
+    if (!customer) {
+      return res
+        .status(404)
+        .send(errorHandler(404, "User not found", "No user registered with this email"));
+    }
+
+    if (customer.emailVerified) {
+      return res
+        .status(400)
+        .send(errorHandler(400, "Already verified", "This email is already verified"));
+    }
+
+    // Generate fresh token and expiry
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+    customer.emailVerificationToken = hashedToken;
+    customer.emailVerificationExpire = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await customer.save();
+
+    const sent = await sendVerificationEmail(email, rawToken);
+    if (!sent) {
+      return res
+        .status(500)
+        .send(errorHandler(500, "Email failed", "Could not send verification email. Please try again later."));
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Verification email resent. Please check your inbox.",
+    });
+  } catch (error) {
+    console.error("Error resending verification email:", error);
+    next(error);
   }
 });
 
@@ -149,6 +320,19 @@ exports.loginCustomer = catchAsyncErrors(async (req, res, next) => {
     return res
       .status(404)
       .send(errorHandler(404, "Bad Request", "Please enter valid password"));
+  }
+
+  // Check if email is verified
+  if (!customer.emailVerified) {
+    return res
+      .status(403)
+      .send(
+        errorHandler(
+          403,
+          "Email not verified",
+          "Please verify your email before logging in. Check your inbox for the verification link."
+        )
+      );
   }
 
   sendToken(customer, 200, res);
@@ -277,33 +461,128 @@ exports.updateProfile = catchAsyncErrors(async (req, res, next) => {
 
 
 // Move the resetPassword function outside and export it
-exports.resetPassword = async (req, res) => {
-  const { email, newPassword } = req.body;
+exports.resetPassword = catchAsyncErrors(async (req, res, next) => {
+  const { email } = req.body;
 
-  if (!newPassword) {
-    return res.status(400).json({ error: "New password is required." });
+  if (!email || !validator.isEmail(email)) {
+    return res
+      .status(400)
+      .send(
+        errorHandler(400, "Invalid request", "Please provide a valid email address")
+      );
   }
 
   try {
-    const saltRounds = 10; // You might want to ensure this value is defined
-    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);  // Hash new password
+    const customer = await Customer.findOne({ email });
 
-    const updatedUser = await Customer.findOneAndUpdate(
-      { email },  // Find user by email
-      { $set: { password: hashedPassword } },  // Set new hashed password
-      { new: true }
-    );
-
-    if (updatedUser) {
-      return res.json({ message: "Password updated successfully." });
-    } else {
-      return res.status(404).json({ error: "User not found." });
+    if (!customer) {
+      // For security, don't reveal if user exists
+      return res.status(200).json({
+        success: true,
+        message: "If an account exists with this email, you will receive password reset instructions.",
+      });
     }
+
+    // Generate reset token (1 hour expiry)
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+    const resetExpire = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    // Store hashed token in DB
+    customer.resetPasswordToken = hashedToken;
+    customer.resetPasswordExpire = resetExpire;
+    await customer.save();
+
+    console.log("📧 Sending reset password email to:", email);
+
+    // Send reset email with unhashed token
+    const emailSent = await sendResetPasswordEmail(email, resetToken);
+
+    if (!emailSent) {
+      // Clear tokens if email fails
+      customer.resetPasswordToken = undefined;
+      customer.resetPasswordExpire = undefined;
+      await customer.save();
+
+      return res
+        .status(500)
+        .send(
+          errorHandler(
+            500,
+            "Email failed",
+            "Could not send reset email. Please try again later."
+          )
+        );
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "If an account exists with this email, you will receive password reset instructions.",
+    });
   } catch (error) {
-    console.error("Error updating password:", error.message);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("Error in resetPassword:", error);
+    next(error);
   }
-};
+});
+
+// RESET PASSWORD CONFIRMATION (from email link)
+exports.resetPasswordConfirm = catchAsyncErrors(async (req, res, next) => {
+  const { token, newPassword } = req.body;
+
+  if (!token || !newPassword) {
+    return res
+      .status(400)
+      .send(
+        errorHandler(400, "Invalid request", "Token and new password are required")
+      );
+  }
+
+  if (newPassword.length < 8) {
+    return res
+      .status(400)
+      .send(
+        errorHandler(400, "Invalid request", "Password must be at least 8 characters")
+      );
+  }
+
+  try {
+    // Hash the token to compare with stored hashed token
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const customer = await Customer.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!customer) {
+      return res
+        .status(400)
+        .send(
+          errorHandler(
+            400,
+            "Invalid token",
+            "Password reset token is invalid or has expired"
+          )
+        );
+    }
+
+    // Update password
+    customer.password = newPassword;
+    customer.resetPasswordToken = undefined;
+    customer.resetPasswordExpire = undefined;
+    await customer.save();
+
+    console.log("✅ Password reset for:", customer.email);
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successfully! Please login with your new password.",
+    });
+  } catch (error) {
+    console.error("Error in resetPasswordConfirm:", error);
+    next(error);
+  }
+});
 
 
 exports.addFeedback = catchAsyncErrors(async (req, res, next) => {
@@ -330,21 +609,21 @@ exports.addFeedback = catchAsyncErrors(async (req, res, next) => {
     next(error);
   }
 });
-sendMailToAdmin = async (newFeedback) => {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.SMTP_EMAIL,
-      pass: process.env.SMTP_PASSWORD,
-    },
-  });
-  const mailOptions = {
-    from: process.env.SMTP_EMAIL,
-    to: "admin email",
-    subject: "New Feedback",
-    text: `New Feedback received from ${newFeedback.user}`,
-  };
-};
+// sendMailToAdmin = async (newFeedback) => {
+//   const transporter = nodemailer.createTransport({
+//     service: "gmail",
+//     auth: {
+//       user: process.env.SMTP_EMAIL,
+//       pass: process.env.SMTP_PASSWORD,
+//     },
+//   });
+//   const mailOptions = {
+//     from: process.env.SMTP_EMAIL,
+//     to: "admin email",
+//     subject: "New Feedback",
+//     text: `New Feedback received from ${newFeedback.user}`,
+//   };
+// };
 
 exports.exchangeToken = catchAsyncErrors(async (req, res, next) => {
   const refreshToken = req.cookies.refreshToken;

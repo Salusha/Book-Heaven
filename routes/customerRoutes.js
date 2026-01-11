@@ -7,54 +7,44 @@ const {
   updateProfile,
   logoutCustomer,
   addFeedback,
-  resetPassword 
-  
-
+  resetPassword,
+  resetPasswordConfirm,
+  verifyEmail,
+  debugVerifyEmail,
+  resendVerificationEmail,
 } = require("../controllers/customerController.js");
 const {
   addTocart,
   getCartItems,
-  deleteCartItem
-}=require('../controllers/cartController');
+  deleteCartItem,
+} = require("../controllers/cartController");
 const { isAuthenticatedUser, authorizeRoles } = require("../middlewares/auth.js");
-
 
 const router = express.Router();
 
-router.route("/register").post(registerCustomer);
+// Authentication Routes
+router.post("/register", registerCustomer);
+router.get("/verify-email", verifyEmail);
+router.post("/debug/verify-email", debugVerifyEmail);
+router.post("/resend-verification", resendVerificationEmail);
+router.post("/login", loginCustomer);
+router.post("/logout", isAuthenticatedUser, logoutCustomer);
 
-router.route("/login").post(loginCustomer);
+// Customer Profile Routes
+router.get("/me", isAuthenticatedUser, getCustomerDetails);
+router.put("/password/update", isAuthenticatedUser, updatePassword);
+router.put("/me/update", isAuthenticatedUser, updateProfile);
+router.post("/resetpassword", resetPassword);
+router.post("/reset-password-confirm", resetPasswordConfirm);
 
-router.route("/logout").post(isAuthenticatedUser, logoutCustomer)
+// Cart Routes
+// Instead of sending user as req parameter we can send user id
+router.post("/cart/add-product", isAuthenticatedUser, addTocart);
+router.delete("/cart/remove-product", isAuthenticatedUser, deleteCartItem);
+router.get("/cart", isAuthenticatedUser, getCartItems);
 
-router.route("/me").get(isAuthenticatedUser, getCustomerDetails);
+// Giving feedback
+router.post("/add-feedback", isAuthenticatedUser, addFeedback);
 
-router.route("/password/update").put(isAuthenticatedUser, updatePassword);
-
-router.route("/me/update").put(isAuthenticatedUser, updateProfile);
-
-router.route("/resetpassword").post(resetPassword);
-
-
-//cart routes
-//instead of sending user as req parameter we can send user id
-router.route("/cart/add-product").post(isAuthenticatedUser, addTocart);
-
-router.route("/cart/remove-product").delete(deleteCartItem);
-
-router.route("/cart").get(isAuthenticatedUser, getCartItems);
-
-
-
-//cart routes
-//instead of sending user as req parameter we can send user id
-router.route("/cart/add-product").post(isAuthenticatedUser,addTocart);
-
-router.route("/cart/remove-product").delete(isAuthenticatedUser,deleteCartItem);
-
-router.route("/cart").get(isAuthenticatedUser,getCartItems);
-
-
-//giving feedback
-router.route("/add-feedback").post(isAuthenticatedUser,addFeedback);
 module.exports = router;
+

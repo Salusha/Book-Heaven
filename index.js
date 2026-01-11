@@ -1,7 +1,8 @@
+require("dotenv").config();
 const express = require("express");
 const path = require("path");
 const app = express();
-const dotenv = require("dotenv");
+// const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
@@ -9,7 +10,7 @@ const { sendContactEmail } = require('./controllers/mailcontroller.js');
 const errorMiddleware = require("./middlewares/error.js");
 
 // Load environment variables from .env file
-dotenv.config({ path: ".env" });
+// dotenv.config({ path: ".env" });
 const PORT = process.env.PORT || 8000;
 console.log(process.env.MONGO_URL);
 
@@ -57,12 +58,14 @@ const productRoutes = require("./routes/productRoutes.js");
 const order = require("./routes/orderRoutes.js");
 const admin = require("./routes/adminRoutes.js");
 const wishlistRoutes = require("./routes/wishlistRoutes.js");
+const subscriptionRoutes = require("./routes/subscriptionRoutes.js");
 const { authorizeRoles } = require("./middlewares/auth.js");
 
 app.use("/customer", customer);
 app.use("/api", productRoutes);
 app.use("/order", order);
 app.use(bodyParser.json());
+app.use("/api/subscribe", subscriptionRoutes);
 
 // app.use("/admin", authorizeRoles, admin);
 app.use("/api/admin", admin); 
@@ -78,11 +81,9 @@ app.use(errorMiddleware);
 //   res.send(`Welcome to BOOK HEAVEN- by Salusha`);
 // });
 
-
-
-
 // Define the POST route
 app.post("/api/contact", sendContactEmail);
+
 // New Route for Cart
 const cartRoutes = require("./routes/cartRoutes.js");
 app.use("/api/cart", cartRoutes);

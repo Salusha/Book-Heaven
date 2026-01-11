@@ -93,19 +93,21 @@ const Signup = () => {
         password,
       });
 
-      const token = response.data.token;
       const customer = response.data.customer;
 
       toast({
-        title: "🎉 Signup Successful",
-        description: `Welcome to Book Haven, ${customer?.name || name}!`,
+        title: "✅ Signup Successful",
+        description: `Welcome ${customer?.name || name}! Please check your email to verify your account.`,
       });
 
-      // Store token in localStorage
-      localStorage.setItem("token", token);
+      // Clear form
+      setName("");
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
 
-      // Redirect to browse page
-      navigate("/browse");
+      // Redirect to login page with message
+      navigate("/login", { state: { message: "Please verify your email before logging in." } });
     } catch (error: any) {
       const errorDetail = error.response?.data?.errors?.detail || 
                           error.response?.data?.errors?.message ||
