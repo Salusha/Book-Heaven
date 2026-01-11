@@ -15,12 +15,23 @@ const productSchema = mongoose.Schema({
  type: String,
     required: [true, "Please Enter Product Author"],
   },
+  language: {
+    type: String,
+    default: "English",
+  },
   price: {
     type: Number,
     required: [true, "Please Enter Product Price"],
     maxLength: [8, "Price cannot exceed 8 characters"],
   },
+  originalPrice: {
+    type: Number,
+  },
   ratings: {
+    type: Number,
+    default: 0,
+  },
+  pages: {
     type: Number,
     default: 0,
   },
@@ -83,6 +94,22 @@ const productSchema = mongoose.Schema({
   shareableLink:{
     type: String,
     required:true,
+  },
+  publisher:{
+    type: String,
+    default: "Book Heaven",
+  },
+  bestseller:{
+    type: Boolean,
+    default: false,
+  },
+  newRelease:{
+    type: Boolean,
+    default: false,
+  },
+  featured:{
+    type: Boolean,
+    default: false,
   },
 
 });
