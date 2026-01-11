@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "@/components/ui/use-toast";
 import {
   BookOpen,
   Star,
@@ -32,6 +33,15 @@ const Index = () => {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
   const [productsData, setProductsData] = useState<Book[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [subscribing, setSubscribing] = useState(false);
+
+  const normalizeCategory = (name: string | undefined | null) =>
+    (name || "")
+      .toLowerCase()
+      .replace(/&/g, "and")
+      .replace(/[^a-z0-9]+/g, "")
+      .trim();
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -74,6 +84,41 @@ const Index = () => {
     fetchProducts();
   }, [apiBaseUrl]);
 
+  const handleNewsletterSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const email = newsletterEmail.trim();
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+    if (!isValidEmail) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email to subscribe.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setSubscribing(true);
+      const res = await axios.post("/api/subscribe", { email });
+      toast({
+        title: res.data?.message || "Subscribed",
+        description: "Thanks for subscribing! We'll keep you posted on new books and offers.",
+      });
+      setNewsletterEmail("");
+    } catch (err: any) {
+      const detail = err?.response?.data?.errors?.detail || err?.response?.data?.message || "Unable to subscribe right now.";
+      toast({
+        title: "Subscribe failed",
+        description: detail,
+        variant: "destructive",
+      });
+    } finally {
+      setSubscribing(false);
+    }
+  };
+
   const featuredToShow = (() => {
     const list = productsData.filter((book) => book.featured);
     return list.length ? list : fallbackFeatured;
@@ -88,6 +133,17 @@ const Index = () => {
     const list = productsData.filter((book) => book.newRelease);
     return list.length ? list : fallbackNewReleases;
   })();
+
+  const showCounts = productsData.length > 0 && !loadError;
+
+  const categoriesToShow = categories.map((category) => {
+    const count = showCounts
+      ? productsData.filter(
+          (book) => normalizeCategory(book.category) === normalizeCategory(category.name)
+        ).length
+      : undefined;
+    return { ...category, bookCount: count };
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -208,9 +264,6 @@ const Index = () => {
               <BookCard key={book._id} book={book} />
             ))}
           </div>
-          {loadError && (
-            <p className="text-sm text-destructive mt-4">{loadError}</p>
-          )}
         </div>
       </section>
 
@@ -226,7 +279,7 @@ const Index = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {categories.map((category) => (
+            {categoriesToShow.map((category) => (
               <Link
                 key={category.id}
                 to={`/categories/${category.name.toLowerCase().replace(/\s+/g, "-")}`}
@@ -241,9 +294,11 @@ const Index = () => {
                         <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
                           {category.name}
                         </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {category.bookCount} books available
-                        </p>
+                        {showCounts && (
+                          <p className="text-sm text-muted-foreground">
+                            {category.bookCount} books available
+                          </p>
+                        )}
                       </div>
                       <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>
@@ -483,14 +538,18 @@ const Index = () => {
               Get the latest book recommendations, exclusive offers, and
               literary news delivered to your inbox.
             </p>
-            <div className="flex flex-col sm:flex-row max-w-md mx-auto gap-4">
+            <form onSubmit={handleNewsletterSubscribe} className="flex flex-col sm:flex-row max-w-md mx-auto gap-4">
               <input
                 type="email"
                 placeholder="Enter your email"
                 className="flex-1 px-4 py-2 rounded-md border border-input bg-background"
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
               />
-              <Button>Subscribe</Button>
-            </div>
+              <Button type="submit" disabled={subscribing}>
+                {subscribing ? "Subscribing..." : "Subscribe"}
+              </Button>
+            </form>
             <p className="text-xs text-muted-foreground mt-4">
               We respect your privacy. Unsubscribe at any time.
             </p>

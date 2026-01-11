@@ -80,7 +80,7 @@ const Browse = () => {
       setBooksData(products.map(mapProductToBook));
     } catch (err) {
       console.error("Failed to load products", err);
-      setError("Unable to load books from the server. Please try again.");
+      setError("Couldn’t load books. Check your connection and try again.");
     } finally {
       setLoading(false);
     }

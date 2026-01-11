@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,61 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState<boolean>(false);
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
+  const [countsAvailable, setCountsAvailable] = useState<boolean>(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSearchDropdown(false);
+        setSearchInput("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Fetch all products once on mount
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await axios.get("/api/products");
+        const products = res.data?.products || [];
+        setAllProducts(products);
+      } catch (err) {
+        console.error("Failed to fetch products for navbar search", err);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  // Filter products based on search input
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchInput(query);
+    
+    if (query.trim()) {
+      const filtered = allProducts.filter((product) =>
+        product.name?.toLowerCase().includes(query.toLowerCase()) ||
+        product.author?.toLowerCase().includes(query.toLowerCase())
+      ).slice(0, 5); // Show max 5 results
+      setSearchResults(filtered);
+      setShowSearchDropdown(true);
+    } else {
+      setSearchResults([]);
+      setShowSearchDropdown(false);
+    }
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setShowSearchDropdown(false);
+  };
 
   const slugifyCategory = (name: string) =>
     name
@@ -49,20 +104,17 @@ const Navbar = () => {
           counts[slug] = (counts[slug] || 0) + 1;
         });
         setCategoryCounts(counts);
+        setCountsAvailable(Object.keys(counts).length > 0);
       } catch (err) {
         console.error("Failed to fetch category counts", err);
+        setCountsAvailable(false);
       }
     };
     fetchCounts();
   }, []);
 
   const handleProfileClick = () => {
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-    if (!token) {
-      navigate("/login");
-    } else {
-      setProfileSheetOpen(true);
-    }
+    setProfileSheetOpen(true);
   };
 
   return (
@@ -93,7 +145,8 @@ const Navbar = () => {
                   <div className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
                     {categories.map((category) => {
                       const slug = slugifyCategory(category.name);
-                      const count = categoryCounts[slug] ?? category.bookCount;
+                      const count = categoryCounts[slug];
+                      const showCount = countsAvailable && typeof count === "number";
                       return (
                       <Link
                         key={category.id}
@@ -106,9 +159,11 @@ const Navbar = () => {
                         <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">
                           {category.description}
                         </p>
-                        <Badge variant="secondary" className="text-xs">
-                          {count} {count === 1 ? "book" : "books"}
-                        </Badge>
+                        {showCount && (
+                          <Badge variant="secondary" className="text-xs">
+                            {count} {count === 1 ? "book" : "books"}
+                          </Badge>
+                        )}
                       </Link>
                       );
                     })}
@@ -137,11 +192,37 @@ const Navbar = () => {
           </NavigationMenu>
 
           {/* Search Bar */}
-          <div className="flex-1 max-w-sm mx-4 hidden lg:block">
-            <div className="relative">
+          <div className="flex-1 max-w-sm mx-4 hidden lg:block relative" ref={searchRef}>
+            <form onSubmit={handleSearchSubmit} className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input placeholder="Search books..." className="pl-10" />
-            </div>
+              <Input
+                placeholder="Search books..."
+                className="pl-10"
+                value={searchInput}
+                onChange={handleSearchChange}
+                onFocus={() => searchInput && setShowSearchDropdown(true)}
+              />
+            </form>
+            
+            {/* Search Dropdown Results */}
+            {showSearchDropdown && searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 bg-white border rounded-md shadow-lg z-50 mt-1 max-h-64 overflow-y-auto">
+                {searchResults.map((product) => (
+                  <Link
+                    key={product._id}
+                    to={`/book/${product._id}`}
+                    className="block px-4 py-2 hover:bg-gray-100 border-b last:border-b-0"
+                    onClick={() => {
+                      setSearchInput("");
+                      setShowSearchDropdown(false);
+                    }}
+                  >
+                    <div className="font-medium text-sm">{product.name}</div>
+                    <div className="text-xs text-gray-600">{product.author || "Unknown author"}</div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Right Actions */}
