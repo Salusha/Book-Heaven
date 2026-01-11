@@ -76,7 +76,7 @@ const Index = () => {
 
         setProductsData(mappedProducts);
       } catch (err) {
-        console.error("Failed to load featured products", err);
+        // console.error("Failed to load featured products", err);
         setLoadError("Unable to load books from the server.");
       }
     };

@@ -73,20 +73,20 @@ const Categories = () => {
       try {
         const res = await axios.get("/api/products");
         const mapped = (res.data.products || []).map(mapProductToBook);
-        console.log("All products fetched:", mapped);
+        // console.log("All products fetched:", mapped);
         const uniqueCats = [...new Set(mapped.map(p => p.category))];
-        console.log("Unique categories in backend:", uniqueCats);
+        // console.log("Unique categories in backend:", uniqueCats);
         
         // Log specific categories we're interested in
-        uniqueCats.forEach(cat => {
-          const count = mapped.filter(p => p.category === cat).length;
-          console.log(`  "${cat}": ${count} books`);
-        });
+        // uniqueCats.forEach(cat => {
+        //   const count = mapped.filter(p => p.category === cat).length;
+        //   console.log(`  "${cat}": ${count} books`);
+        // });
         
         setAllProducts(mapped);
         setLoading(false);
       } catch (err: any) {
-        console.error("Failed to fetch products:", err);
+        // console.error("Failed to fetch products:", err);
         setError(err?.response?.data?.message || "Failed to load products.");
         setLoading(false);
       }
@@ -100,12 +100,12 @@ const Categories = () => {
     const filtered = allProducts.filter(
       (p) => normalizeCategory(p.category || "") === normalizeCategory(categoryName),
     );
-    console.log("=== Category Search Debug ===");
-    console.log("Slug:", categorySlug);
-    console.log("Converted category name:", categoryName);
-    console.log("Available categories:", [...new Set(allProducts.map(p => p.category))]);
-    console.log("Products matching:", filtered.length);
-    filtered.forEach(p => console.log(`  - ${p.title} (category: "${p.category}")`));
+    // console.log("=== Category Search Debug ===");
+    // console.log("Slug:", categorySlug);
+    // console.log("Converted category name:", categoryName);
+    // console.log("Available categories:", [...new Set(allProducts.map(p => p.category))]);
+    // console.log("Products matching:", filtered.length);
+    // filtered.forEach(p => console.log(`  - ${p.title} (category: "${p.category}")`));
     return filtered;
   }, [allProducts, categoryName, categorySlug]);
 

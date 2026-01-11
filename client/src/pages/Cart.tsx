@@ -66,7 +66,7 @@ const Cart = () => {
       removeFromCart(productId);
       toast({ title: "Removed from cart" });
     } catch (err: any) {
-      console.error("Failed to remove item:", err);
+      // console.error("Failed to remove item:", err);
       toast({ title: "Error", variant: "destructive" });
     } finally {
       setRemoving(null);
