@@ -14,7 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { MapPin, Plus, Trash2, Edit2, Loader } from "lucide-react";
 import axios from "axios";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "../hooks/use-toast";
 
 interface Address {
   _id: string;
