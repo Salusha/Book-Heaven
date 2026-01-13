@@ -6,13 +6,15 @@
 
 ## 🚀 Features
 
-- 🔍 **Browse & Search Books:** Filter and search books by category, name, or keyword.
+- 🔍 **Browse & Search Books:** Filter and search books by category, author, or keyword.
 - 🛒 **Shopping Cart & Wishlist:** Add, remove, or update items in the cart and wishlist.
-- 👤 **User Authentication:** Secure registration, login, logout, and JWT-based session management.
-- ⚙️ **Profile Management:** Update user info, view order history, and manage personal data.
-- 📦 **Admin Panel:** Role-based access to add/edit/delete books and manage users.
+- 👤 **User Authentication:** Secure registration, login, logout, JWT-based session management, and email verification.
+- ⚙️ **Profile Management:** Update user info, view order history, manage saved addresses, and handle personal data.
+- 📮 **Saved Addresses:** Add, edit, and manage multiple shipping addresses.
+- 📧 **Email Notifications:** Password reset, email verification.
+- 📬 **Newsletter Subscription:** Subscribe to receive updates and promotions.
+- 🎨 **Admin Panel:** Role-based access to add/edit/delete books and manage users.
 - 💬 **Feedback System:** Logged-in users can send feedback and receive responses.
-- 💡 **Responsive UI/UX:** Mobile-first design with hover menus, transitions, and clean layout.
 
 ---
 
@@ -20,13 +22,14 @@
 
 | Layer        | Technology                                       |
 |--------------|--------------------------------------------------|
-| Frontend     | React.js, TypeScript, React Router, HTML, CSS    |
+| Frontend     | React.js, TypeScript, Vite, React Router         |
 | Backend      | Node.js, Express.js                              |
 | Database     | MongoDB, Mongoose                                |
 | Auth         | JWT (JSON Web Token), bcrypt                     |
-| Styling      | CSS3, Flexbox, Grid, Animations                  |
+| Styling      | Tailwind CSS, shadcn/ui                          |
+| Email        | Nodemailer                                       |
 | APIs         | RESTful APIs                                     |
-| Tools        | Axios, dotenv, concurrently, nodemon             |
+| Tools        | Axios, dotenv                                    |
 
 ---
 
@@ -34,17 +37,22 @@
 
 ```
 book-heaven/
-├── client/               # React + TypeScript frontend
-│   ├── components/
-│   ├── pages/
+├── client/               # React + TypeScript frontend (Vite)
+│   ├── src/
+│   │   ├── components/   # Reusable UI components (shadcn/ui)
+│   │   ├── pages/        # Route-based page components
+│   │   ├── contexts/     # React Context (Cart, Wishlist)
+│   │   ├── hooks/        # Custom React hooks
+│   │   └── lib/          # Utilities and types
 │   └── ...
-├── server/               # Express + Node backend
-│   ├── controllers/
-│   ├── models/
-│   ├── routes/
-│   └── ...
-├── .env
-├── package.json
+├── controllers/          # Express route controllers
+├── models/               # Mongoose schemas
+├── routes/               # Express API routes
+├── middlewares/          # Auth and error handling
+├── utils/                # Backend utilities
+├── index.js              # Express server entry point
+├── docker-compose.yml    # Docker setup
+├── Dockerfile
 └── README.md
 ```
 
@@ -55,20 +63,17 @@ book-heaven/
 ```bash
 # 1. Clone the repo
 git clone https://github.com/Salusha/Book-Heaven.git
+cd Book-Heaven
 
 # 2. Install backend dependencies
-cd server
 npm install
 
 # 3. Install frontend dependencies
-cd ../client
+cd client
 npm install
+cd ..
 
-# 4. Create .env in /server with the following:
-MONGO_URI=your_mongodb_connection
-JWT_SECRET=your_jwt_secret
-
-# 5. Run the app (from root directory)
+# 5. Run the app (backend + frontend)
 npm run dev
 ```
 
@@ -78,9 +83,13 @@ npm run dev
 
 Manual testing was performed across key features:
 - Add/Remove from Cart & Wishlist
-- Book search and category filtering
-- User registration/login/logout flows
+- Book search, category filtering, and author browsing
+- User registration/login/logout with email verification
+- Password reset and email functionality
+- Order placement and checkout process
+- Saved addresses management
 - Admin-only book CRUD operations
+- Newsletter subscription handling
 - Feedback form submission & display
 
 ---
@@ -99,7 +108,7 @@ Manual testing was performed across key features:
 - JWT authentication and bcrypt password hashing used for secure user login.
 - Proper error handling and response status codes implemented.
 - Clean component-based architecture and reusable logic maintained throughout.
-- Fully responsive UI with hover-based navigation and smooth transitions.
+- Responsive UI with hover-based navigation and smooth transitions.
 
 ---
 
