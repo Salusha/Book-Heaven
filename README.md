@@ -26,7 +26,6 @@
 | Backend      | Node.js, Express.js                              |
 | Database     | MongoDB, Mongoose                                |
 | Auth         | JWT (JSON Web Token), bcrypt                     |
-| Styling      | Tailwind CSS, shadcn/ui                          |
 | Email        | Nodemailer                                       |
 | APIs         | RESTful APIs                                     |
 | Tools        | Axios, dotenv                                    |
@@ -86,7 +85,6 @@ Manual testing was performed across key features:
 - Book search, category filtering, and author browsing
 - User registration/login/logout with email verification
 - Password reset and email functionality
-- Order placement and checkout process
 - Saved addresses management
 - Admin-only book CRUD operations
 - Newsletter subscription handling
