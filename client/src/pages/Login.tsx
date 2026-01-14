@@ -15,7 +15,7 @@
 // import Navbar from "@/components/Navbar";
 // import Footer from "@/components/Footer";
 // import axios from "axios";
-// import { toast } from "@/components/ui/use-toast";
+// import { toast } from "@/hooks/use-toast";
 
 // const Login = () => {
 //   const [email, setEmail] = useState("");
@@ -177,7 +177,7 @@ import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import axios from "axios";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { useWishlist } from "@/contexts/WishlistContext";
 
 const Login = () => {

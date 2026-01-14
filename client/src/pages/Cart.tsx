@@ -6,7 +6,7 @@ import { ShoppingCart, Trash2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Link } from "react-router-dom";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import BookCard from "@/components/BookCard";
 import { Book } from "@/lib/types";
 import { useCart } from "@/contexts/CartContext";

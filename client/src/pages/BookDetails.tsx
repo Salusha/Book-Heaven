@@ -24,7 +24,7 @@ import Footer from "@/components/Footer";
 import { cn } from "@/lib/utils";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 const BookDetails = () => {
   const { id } = useParams<{ id: string }>();

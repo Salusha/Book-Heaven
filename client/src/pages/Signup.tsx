@@ -14,7 +14,7 @@ import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import axios from "axios";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 const Signup = () => {
   const [name, setName] = useState("");

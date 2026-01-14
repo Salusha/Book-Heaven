@@ -7,7 +7,7 @@ import { Star, Heart, ShoppingCart, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Book } from "@/lib/types";
 import axios from "axios";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
 
