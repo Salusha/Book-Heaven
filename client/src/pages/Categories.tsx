@@ -71,7 +71,8 @@ const Categories = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await axios.get("/api/products");
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
+        const res = await axios.get(`${apiBaseUrl}/api/products`);
         const mapped = (res.data.products || []).map(mapProductToBook);
         // console.log("All products fetched:", mapped);
         const uniqueCats = [...new Set(mapped.map(p => p.category))];

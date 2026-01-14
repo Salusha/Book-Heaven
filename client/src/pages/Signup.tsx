@@ -17,6 +17,7 @@ import axios from "axios";
 import { toast } from "@/components/ui/use-toast";
 
 const Signup = () => {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -87,7 +88,7 @@ const Signup = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post("/customer/register", {
+      const response = await axios.post(`${apiBaseUrl}/customer/register`, {
         name,
         email,
         password,
