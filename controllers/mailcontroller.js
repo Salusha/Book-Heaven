@@ -91,8 +91,8 @@ exports.sendVerificationEmail = async (email, verificationToken) => {
       `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
 
     await resend.emails.send({
-      from: "Book Heaven <no-reply@bookheaven.dev>",
-      to: email,
+      from: "Book Heaven <onboarding@resend.dev>",
+      to: "ms.0605salusha@gmail.com",
       subject: "Verify Your Book Heaven Email Address",
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
@@ -121,8 +121,8 @@ exports.sendResetPasswordEmail = async (email, resetToken) => {
       `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
     await resend.emails.send({
-      from: "Book Heaven <no-reply@bookheaven.dev>",
-      to: email,
+      from: "Book Heaven <onboarding@resend.dev>",
+      to: "ms.0605salusha@gmail.com",
       subject: "Reset Your Book Heaven Password",
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
@@ -150,9 +150,9 @@ exports.sendContactEmail = async (req, res) => {
 
   try {
     await resend.emails.send({
-      from: "Book Heaven <no-reply@bookheaven.dev>",
+      from: "Book Heaven <onboarding@resend.dev>",
       to: "email@gmail.com",
-      replyTo: email,
+      replyTo: "ms.0605salusha@gmail.com",
       subject: `Contact Message from ${name}`,
       html: `
         <p><strong>Name:</strong> ${name}</p>
