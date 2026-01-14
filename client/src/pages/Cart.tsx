@@ -21,6 +21,7 @@ interface CartItem {
 }
 
 const Cart = () => {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState<string | null>(null);
@@ -56,7 +57,7 @@ const Cart = () => {
 
     try {
       setRemoving(productId);
-      await axios.post("/api/cart/remove-product", {
+      await axios.post(`${apiBaseUrl}/api/cart/remove-product`, {
         productId,
       }, {
         headers: { "auth-token": token },
@@ -105,7 +106,7 @@ const Cart = () => {
         return;
       }
 
-      const res = await axios.get("/api/cart", {
+      const res = await axios.get(`${apiBaseUrl}/api/cart`, {
         headers: {
           "auth-token": token,
         },
@@ -255,13 +256,13 @@ const Cart = () => {
                                   product: item.productId,
                                   price: item.price,
                                 }));
-                                await axios.post("/api/cart", { cartItems }, {
+                                await axios.post(`${apiBaseUrl}/api/cart`, { cartItems }, {
                                   headers: { "auth-token": token },
                                 });
                               } else if (diff < 0) {
                                 const removeCount = Math.abs(diff);
                                 for (let i = 0; i < removeCount; i++) {
-                                  await axios.post("/api/cart/remove-product", { productId: item.productId }, {
+                                  await axios.post(`${apiBaseUrl}/api/cart/remove-product`, { productId: item.productId }, {
                                     headers: { "auth-token": token },
                                   });
                                 }

@@ -42,9 +42,10 @@ const Wishlist = () => {
       setLoading(true);
       
       try {
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
         const token = localStorage.getItem("token") || sessionStorage.getItem("token");
         
-        const response = await axios.get("/api/wishlist/getwishlistdata", {
+        const response = await axios.get(`${apiBaseUrl}/api/wishlist/getwishlistdata`, {
           headers: {
             "auth-token": token,
           },

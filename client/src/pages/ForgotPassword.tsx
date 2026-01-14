@@ -17,6 +17,7 @@ import axios from "axios";
 import { toast } from "@/hooks/use-toast";
 
 const ForgotPassword = () => {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -36,7 +37,7 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      await axios.post("/customer/resetpassword", { email });
+      await axios.post(`${apiBaseUrl}/customer/resetpassword`, { email });
 
       toast({
         title: "✅ Email Sent",

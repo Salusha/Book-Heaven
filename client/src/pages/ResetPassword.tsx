@@ -66,7 +66,8 @@ const ResetPassword = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post("/customer/reset-password-confirm", {
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
+      const response = await axios.post(`${apiBaseUrl}/customer/reset-password-confirm`, {
         token,
         newPassword,
       });

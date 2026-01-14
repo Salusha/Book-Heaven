@@ -101,7 +101,7 @@ const Index = () => {
 
     try {
       setSubscribing(true);
-      const res = await axios.post("/api/subscribe", { email });
+      const res = await axios.post(`${apiBaseUrl}/api/subscribe`, { email });
       toast({
         title: res.data?.message || "Subscribed",
         description: "Thanks for subscribing! We'll keep you posted on new books and offers.",

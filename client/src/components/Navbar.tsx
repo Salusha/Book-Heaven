@@ -54,7 +54,8 @@ const Navbar = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await axios.get("/api/products");
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
+        const res = await axios.get(`${apiBaseUrl}/api/products`);
         const products = res.data?.products || [];
         setAllProducts(products);
       } catch (err) {
@@ -96,7 +97,8 @@ const Navbar = () => {
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const res = await axios.get("/api/products");
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
+        const res = await axios.get(`${apiBaseUrl}/api/products`);
         const counts: Record<string, number> = {};
         (res.data.products || []).forEach((p: any) => {
           const cat = p?.category || "";

@@ -181,6 +181,7 @@ import { toast } from "@/hooks/use-toast";
 import { useWishlist } from "@/contexts/WishlistContext";
 
 const Login = () => {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -196,7 +197,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post("/customer/login", {
+      const response = await axios.post(`${apiBaseUrl}/customer/login`, {
         email,
         password,
       });
@@ -249,7 +250,7 @@ const Login = () => {
   const handleResend = async () => {
     if (!pendingEmail) return;
     try {
-      const res = await axios.post("/customer/resend-verification", { email: pendingEmail });
+      const res = await axios.post(`${apiBaseUrl}/customer/resend-verification`, { email: pendingEmail });
       toast({
         title: "Verification Email Resent",
         description: res.data?.message || "Please check your inbox.",

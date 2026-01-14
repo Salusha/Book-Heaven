@@ -44,9 +44,10 @@ const ProfileSheet = ({ open, onOpenChange }: ProfileSheetProps) => {
     setLoading(true);
     const fetchUserProfile = async () => {
       try {
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
         // console.log("Fetching profile with token:", token ? "Token exists" : "No token");
         
-        const res = await axios.get("/customer/me", {
+        const res = await axios.get(`${apiBaseUrl}/customer/me`, {
           headers: { "auth-token": token },
         });
 

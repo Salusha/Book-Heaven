@@ -37,7 +37,8 @@ const Footer = () => {
 
     try {
       setSubscribing(true);
-      const res = await axios.post("/api/subscribe", { email });
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
+      const res = await axios.post(`${apiBaseUrl}/api/subscribe`, { email });
       toast({
         title: res.data?.message || "Subscribed",
         description: "Thanks for subscribing! We'll keep you posted on new books and offers.",
