@@ -120,7 +120,7 @@ const BookDetails = () => {
     bestseller: Boolean(product.bestseller),
     newRelease: Boolean(product.newRelease),
     featured: Boolean(product.featured),
-    isbn: product.isbn || product._id || "N/A",
+    isbn: product.isbn || "N/A",
   };
 
   const discountPercentage = 0;
