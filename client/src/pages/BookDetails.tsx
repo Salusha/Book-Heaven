@@ -188,6 +188,51 @@ const BookDetails = () => {
     }
   };
 
+  const handleBuyNow = async () => {
+    const token = ensureAuth();
+    if (!token) return;
+    try {
+      setAddingToCart(true);
+      // Add to cart if not already in cart
+      if (!inCart) {
+        const items = [{ product: book._id, price: book.price }];
+        await axios.post(`${apiBaseUrl}/api/cart`, { cartItems: items }, { headers: { "auth-token": token } });
+        await refreshCart();
+      }
+      
+      // Fetch all cart items from backend to pass to checkout
+      const cartResponse = await axios.get(`${apiBaseUrl}/api/cart`, {
+        headers: { "auth-token": token },
+      });
+      
+      const cartItems = cartResponse.data.cartItems || [];
+      
+      // Transform cart items to checkout format
+      const checkoutItems = cartItems.map((item: any) => ({
+        _id: item.product._id || item._id,
+        productId: item.product._id,
+        quantity: 1,
+        price: item.price ?? item.product.price,
+        product: {
+          title: item.product.name || "Untitled",
+          author: item.product.author || "Unknown",
+          coverImage: item.product.images?.[0]?.url || "/placeholder.svg",
+          price: item.product.price || 0,
+        },
+      }));
+      
+      // Calculate total
+      const total = checkoutItems.reduce((acc: number, item: any) => acc + item.price * item.quantity, 0);
+      
+      // Navigate to checkout with all cart items
+      navigate("/checkout", { state: { items: checkoutItems, total } });
+    } catch (err: any) {
+      toast({ title: "Failed to proceed to checkout", variant: "destructive" });
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -290,7 +335,8 @@ const BookDetails = () => {
                       variant="outline"
                       size="sm"
                       className="w-full"
-                      disabled={!book.inStock}
+                      disabled={!book.inStock || addingToCart}
+                      onClick={handleBuyNow}
                     >
                       {book.inStock ? "Buy Now" : "Out of Stock"}
                     </Button>
