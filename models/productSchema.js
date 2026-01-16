@@ -99,6 +99,9 @@ const productSchema = mongoose.Schema({
     type: String,
     default: "Book Heaven",
   },
+  isbn:{
+    type: String,
+  },
   bestseller:{
     type: Boolean,
     default: false,
