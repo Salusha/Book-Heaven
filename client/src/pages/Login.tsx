@@ -19,7 +19,7 @@ import { useWishlist } from "@/contexts/WishlistContext";
 
 const Login = () => {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
-  const [email, setEmail] = useState("TestProfile@gmail.com");
+  const [email, setEmail] = useState("testprofile@gmail.com");
   const [password, setPassword] = useState("test1234");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
